@@ -1,0 +1,51 @@
+---
+title: "Projekt 3 - wizualizacja grafów"
+author: "Ryszard Szymański"
+date: "3/20/2020"
+output: 
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Zapisz energie sprężynkowego układu
+$U = \frac{k_{e}}{2} \cdot \sum_{i \in V(g)} q_i \cdot \sum_{j \in V(g) \ \land \ j \neq i} \frac{q_j}{d(v_i, v_j)} - \frac{k_{s}}{2} \cdot \sum_{i \in V(g)}\sum_{j \in N_g(i)} d^2(i, j)$, gdzie:
+
+* $k_{e}$ - stała Coulomba
+* $V(g)$ - zbiór wierzchołków grafu $g$
+* $d(i,j)$ - odległość między wierzchołkami $i$ oraz $j$
+* $N_g(i)$ - sąsiedztwo wierzchołak $i$ w grafie $g$
+* $q_{i}$ - ładunek $i$-tego wierzchołka
+
+
+## Narysuj graf w pewnej konfiguracji
+W ramach przykładów wygenerowano losowy graf będący cyklem. Poniżej przedstawiono wykres z losową konfiguracją:
+```{r}
+sample_graph <- drake::readd(sample_graph)
+sample_layout <- matrix(runif(2 * vcount(sample_graph), -1, 1), ncol = 2)
+plot(drake::readd(sample_graph), layout = sample_layout)
+```
+
+## Wykonaj animacje
+Dokonano własnej implementacji symulacji, gdzie w każdym z wierzchołków grafu umieszczany jest taki sam ładunek oraz krawędzie między wierzchołkami traktowane są jako sprężyny. W trakcie implementacji inspirowano się następującą pracą: http://www.it.usyd.edu.au/~peter/old_spring_paper.pdf. Poniżej zamieszczono animację prezentująca działanie algorytmu dla przykładowego grafu z poprzedniego podpunktu.
+
+```{r own_animation animation, echo=FALSE}
+knitr::include_app("animation-own_implementation.gif")
+```
+
+Własną implementację porównano z algorytmem Fruchtermana-Reingolda:
+
+```{r igraph_builtin animation, echo=FALSE}
+knitr::include_app("animation-igraph_builtin.gif")
+```
+
+## Obserwacje
+* Bardzo duże znaczenie przy implementacji miał:
+  * dobór stałych np. stałej określającej rząd przesunięcia wierzchołka
+  * pozycje początkowe, w dziwnych przypadkach grafy potrafiły "przeskakiwać" między dwoma skrajnymi stanami
+
+## Zewnętrzne źródła
+* www.it.usyd.edu.au/~peter/old_spring_paper.pdf
+* https://github.com/gephi/gephi/wiki/Fruchterman-Reingold
