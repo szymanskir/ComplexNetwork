@@ -7,7 +7,139 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+library(ggplot2)
+
+library(ggraph)
+library(patchwork)
+library(igraph)
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Functions
+```{r}
+plot_histogram <- function(values) {
+  values_df <- data.frame(
+    values = values
+  )
+  
+  ggplot(values_df, aes(x = values)) +
+    geom_histogram()
+}
+
+plot_ggraph <- function(graph, layout = "auto") {
+  ggraph(graph, layout = layout) +
+    geom_edge_link() +
+    geom_node_point()
+}
+
+plot_with_sigmas <- function(values, values_sd = NULL, sd_breaks) {
+  if (is.null(values_sd)) {
+    values_sd <- round(sd(values), 2)
+  }
+
+  plot_histogram(values) +
+    scale_x_continuous(breaks = sd_breaks, labels = paste0(sd_breaks, "\u03C3"))
+}
+
+check_pareto_rule <- function(values) {
+  threshold <- quantile(values, 0.8)
+  percentage <- sum(values[values < threshold]) / sum(values)
+  
+  sprintf("%s obserwacji posiada %s wartości", 0.8, percentage)
+}
+```
+
+## Przypadek normalny
+
+### Zadanie 1
+```{r}
+values <- rnorm(n = 1e6)
+plot_with_sigmas(values, values_sd = 1, sd_breaks = c(-3, -2, -1, 1, 2, 3))
+```
+
+### Zadanie 2
+```{r}
+values <- rgeom(1e6, 0.45)
+
+plot_with_sigmas(values, sd_breaks = c(1,2,3))
+check_pareto_rule(values)
+```
+
+## Przypadek grubych ogonów
+### Zadanie 1
+```{r}
+values <- actuar::rinvpareto(1e2, 1, 2)
+plot_with_sigmas(values, sd_breaks = c(1,2,3))
+```
+
+### Zadanie 2
+```{r}
+values <- VGAM::rzeta(1e2, 2)
+
+plot_with_sigmas(values, sd_breaks = c(1,2,3))
+check_pareto_rule(values)
+```
+## Powtórz wcześniejsze ćwiczenia dla rozkładu zipfa
+
+```{r}
+N <- 1e3; shape <- 0.5; y <- 1:N
+values <- VGAM::rzipf(y, N = N, shape = shape)
+plot_with_sigmas(values, sd_breaks = c(1,2,3))
+check_pareto_rule(values)
+```
+
+## Czy rozkład wystarczy?
+
+Kontrprzykład: gwiazdla i graf dwudzielny
+```{r}
+star_graph <- igraph::make_star(10, mode="undirected")
+bipartite_graph <- igraph::make_full_bipartite_graph(5, 2)
+
+star_graph_plot <- plot_ggraph(star_graph)
+star_graph_hist <- plot_histogram(degree(star_graph))
+
+bipartite_graph_plot <- plot_ggraph(bipartite_graph)
+bipartite_graph_hist <- plot_histogram(degree(bipartite_graph))
+
+(star_graph_plot + star_graph_hist) / (bipartite_graph_plot + bipartite_graph_hist)
+```
+
+
+## Czym mogą różnić się sieci o tym samym rozkładzie?
+
+### Sieć dysasortatywna - przykład
+Sieć klientów sieci sklepów Lidl, gdzie połączenie oznacza dokonanie transakcji między węzłami. W takiej sieci można by było zauważyć podgrafy zbliżone do grafów typu "gwiazda" (star graph).
+
+### Sieć asortatywna
+Sieć odizolowanych od siebie plemion o bardzo różnej ilości wielości społeczności. Taka sieć składałaby się z podgrafów "prawie-pełnych" (prawie wszyscy się znają w obrębie plemienia)
+
+## Inne cechy wybranych sieci rzeczywistych
+
+* Fraktalne sieci dystrybucyjne
+* Sieci hierarchiczne - np. sieć pracowników firmy IT. Podstawowym modułem jest zespół pracowników pracujących w ramach jednego zespołu. Zespoły mogą pracować w konkretnych technologiach np. Java, Python. Jeszcze wyżej może być wspólny obszar technologii np. aplikacje webowe.
+* Sieci ze strukturą społeczną - np. sieć pracowników firmy Enron, w której połączenie oznacza wymiane maili między pracownikami (na podstawie danych: https://www.cs.cmu.edu/~enron/)
+
+
+## Metody wizualizacji grafów
+
+### Zadanie 1
+https://reference.wolfram.com/language/ref/GraphLayout.html
+
+### Zadanie 2 i 3
+```{r}
+sample_graph <- igraph::erdos.renyi.game(30, 0.4)
+algorithms <- c(
+  "tree",
+  "circle",
+  "nicely",
+  "kk",
+  "mds"
+)
+lapply(algorithms, function(algorithm) {
+  ggraph(sample_graph, layout = "igraph", algorithm = algorithm) +
+    geom_node_point() + 
+    geom_edge_link()
+})
 ```
 
 ## Zapisz energie sprężynkowego układu
@@ -29,13 +161,24 @@ plot(drake::readd(sample_graph), layout = sample_layout)
 ```
 
 ## Wykonaj animacje
-Dokonano własnej implementacji symulacji, gdzie w każdym z wierzchołków grafu umieszczany jest taki sam ładunek oraz krawędzie między wierzchołkami traktowane są jako sprężyny. W trakcie implementacji inspirowano się następującą pracą: http://www.it.usyd.edu.au/~peter/old_spring_paper.pdf. Poniżej zamieszczono animację prezentująca działanie algorytmu dla przykładowego grafu z poprzedniego podpunktu.
+Dokonano własnej implementacji dwóch wariantów symulacji:
+* Z wykorzystaniem algorytmu Metropolisa
+* Z wykorzystaniem konkretnych sił, gdzie "fizyka" wykonuje całą robotę i zbiega do stanu o minimum energii. W trakcie implementacji inspirowano się następującą pracą: http://www.it.usyd.edu.au/~peter/old_spring_paper.pdf. 
 
+Poniżej zamieszczono animację prezentująca działania algorytmów dla przykładowego grafu z poprzedniego podpunktu.
+
+### Wariant z algorytmem Metropolisa
 ```{r own_animation animation, echo=FALSE}
+knitr::include_app("animation-simulated_annealing.gif")
+```
+
+
+### Wariant "fizyczny"
+```{r own_animation2 animation, echo=FALSE}
 knitr::include_app("animation-own_implementation.gif")
 ```
 
-Własną implementację porównano z algorytmem Fruchtermana-Reingolda:
+Własne implementacje porównano z algorytmem Fruchtermana-Reingolda:
 
 ```{r igraph_builtin animation, echo=FALSE}
 knitr::include_app("animation-igraph_builtin.gif")

@@ -1,5 +1,6 @@
-library(igraph)
 library(animation)
+library(igraph)
+library(logging)
 
 calculate_point_distance <- function(p1, p2) {
   sqrt(sum((p1 - p2) ^ 2))  
@@ -95,6 +96,67 @@ plot_igraph_builtin <- function(graph, steps = 10) {
       niter = step
     )
   }
+}
+
+
+
+calculate_total_energy <- function(graph, current_layout, constants = list(vector_electric_charge = 1e-3,
+                                                                            spring_constant = 1e5,
+                                                                            spring_length = 0.45)) {
+  calculate_single_vertex_energy <- function(ind, layout, constants) {
+    current_vertex <- layout[ind, ]
+    other_vertices <- layout[-ind, , drop = FALSE]
+    neighbor_vertices <- layout[neighbors(graph, ind), , drop = FALSE]
+    
+    coulomb_constant <- 8.9875 * 1e9
+    electrostatic_energy <- apply(other_vertices, 1, function(other_vertex) {
+      point_distance <- calculate_point_distance(current_vertex, other_vertex)
+      (coulomb_constant * constants$vector_electric_charge ^2) / point_distance
+    }) %>% sum()
+      
+    spring_energy <- apply(neighbor_vertices, 1, function(other_vertex) {
+      point_distance <- calculate_point_distance(current_vertex, other_vertex)
+      (constants$spring_constant / 2) * (constants$spring_length - point_distance)^2
+    }) %>% sum()
+    
+    electrostatic_energy + spring_energy
+  }
+  
+  sapply(seq_len(vcount(graph)), function(ind) calculate_single_vertex_energy(ind, current_layout, constants)) %>% 
+    sum()
+}
+
+plot_simulated_annealing <- function(graph, start_temperature = 300, temperature_lowering_factor = 0.9, steps = 10) {
+  stopifnot(temperature_lowering_factor < 1 && temperature_lowering_factor > 0)
+  boltzman_constant <- 1.380649 * 1e-23
+  vertices_count <- vcount(graph)
+  current_layout <- matrix(runif(2 * vertices_count, -1, 1), ncol = 2, byrow = TRUE)
+  current_temperature <- start_temperature
+  
+  for (step in seq_len(steps)) {
+    start_energy <- calculate_total_energy(graph, current_layout)
+    loginfo(sprintf("[Step %s] Current energy: %s", step, start_energy))
+    
+    # Apply random change
+    random_vertex <- sample(seq_len(vertices_count), 1)
+    vertex_movement <- runif(2, -1, 1)
+    new_layout <- current_layout
+    new_layout[random_vertex, ] <- new_layout[random_vertex, ] + c(vertex_movement)
+    
+    new_energy <- calculate_total_energy(graph, new_layout) 
+    energy_change <- new_energy - start_energy
+    
+    is_change_beneficial <- energy_change < 0
+    current_temperature <- temperature_lowering_factor * current_temperature
+    acceptance_ratio <- exp(-energy_change/(boltzman_constant * current_temperature))
+    accept_bad_change <- runif(1) < acceptance_ratio
+    
+    if (is_change_beneficial || accept_bad_change) {
+      current_layout <- new_layout
+      plot(graph, layout = current_layout)
+    }
+  }
+  current_layout
 }
 
 create_animation <- function(output_file, plot_fun, graph, steps, interval) {
