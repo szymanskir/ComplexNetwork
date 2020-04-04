@@ -27,6 +27,14 @@ capability <- function(graph) {
   sum(vertex_distances_inverted) / (vertex_count * (vertex_count - 1))
 }
 
+network_exponent <- function(graph) {
+  vertex_degrees <- degree(graph)
+  min_degree <- min(vertex_degrees)
+  vertex_count <- vcount(graph)
+  
+  1 + vertex_count * sum(log(vertex_degrees / min_degree))
+}
+
 clustering_coefficient_1 <- function(graph) {
   node_clustering_coefficient <- function(graph, v) {
     v_degree <- degree(graph, v)
