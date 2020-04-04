@@ -11,3 +11,11 @@ mean_nearest_vertex_degree <- function(graph) {
   
   sum(nearest_neighbors_degrees) / nearest_neighbors_count
 }
+
+
+mean_distance <- function(graph) {
+  vertex_count <- vcount(graph)
+  vertex_distances <- distances(graph)
+  diag(vertex_distances) <- 0 # d(i,j) where i != j
+  sum(vertex_distances) / (vertex_count * (vertex_count - 1))
+}
