@@ -33,6 +33,8 @@ plan <- drake_plan(
   ############################
   ##############  Project 4
   ############################
+  enron_graph = read.table("Project4/email-EU.edges") %>% 
+    igraph::graph_from_data_frame(),
   example_graph_project4 = erdos.renyi.game(8, 0.5),
   project4_report_html = rmarkdown::render(input = knitr_in("Project4/Ryszard.Szymanski-4.Rmd")),
 )

@@ -7,12 +7,111 @@ output: html_document
 
 ```{r setup, include=FALSE}
 library(igraph)
+library(ggplot2)
 library(purrr)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Zadanie 1
+Do wykonania zadań wykorzystano sieć emaili firmy Enron (źródło: http://networkrepository.com/email-EU.php).
+```{r}
+hist2df <- function(hist_vals) {
+  data.frame(
+    breaks = hist_vals$breaks[seq_along(hist_vals$counts)],
+    counts = hist_vals$counts
+  )
+}
+enron <- drake::readd(enron_graph)
+hist_vals <- hist(degree(enron), plot = FALSE, probability = TRUE)
+
+hist_df <- hist2df(hist_vals)
+
+ggplot(hist_df, aes(x = breaks, y = counts)) + 
+  geom_line()
+```
+
+## Zadanie 2
+Rysunek jest bardziej czytelny -- bliżej mu do linii prostej, której się spodziewamy przy rozkładach potęgowych. Można jednak zauważyć szum bliżej końca narysowanej linii.
+```{r}
+ggplot(hist_df, aes(x = breaks, y = counts)) + 
+  geom_line() + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+## Zadanie 3 i 4
+Zastosowanie logarytmicznego binowania pozwoliło na wygładzenie szumu, które pojawiło się w zadaniu 2
+```{r}
+enron_degrees <- degree(enron)
+breaks <- exp(seq(log(min(enron_degrees)), log(max(enron_degrees)), length.out = length(hist_vals$breaks)))
+hist_vals_log_binned <- hist(enron_degrees, breaks = breaks, probability = TRUE)
+
+hist_df <- hist2df(hist_vals_log_binned)
+
+ggplot(hist_df, aes(x = breaks, y = counts)) + 
+  geom_line() +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+
+## Zadanie 5
+```{r}
+enron_cdf <- ecdf(enron_degrees) 
+enron_cdf_summary <- summary(enron_cdf)
+cdf_min <- enron_cdf_summary[["Min."]]
+cdf_max <- enron_cdf_summary[["Max."]]
+
+x <- seq(cdf_min, cdf_max)
+survival_fun_values <- 1 - enron_cdf(x)
+data.frame(
+  x = x,
+  y = survival_fun_values
+) %>% ggplot(aes(x = x, y = y)) +
+  geom_line()
+```
+
+## Zadanie 6
+Najbardziej czytelny jest wykres w którym zastosowano jednocześnie skale logarytmiczne oraz logarytmiczne binowanie.
+
+## Zadanie 7
+```{r}
+lm_fit <- lm(log(counts) ~ log(breaks), data = hist_df)
+lm_fit
+```
+## Zadanie 8
+```{r}
+alpha <- 1 + length(hist_vals_log_binned$counts) * sum(log(hist_vals_log_binned$counts / min(hist_vals_log_binned$counts)))^(-1)
+alpha
+```
+## Zadanie 9
+```{r}
+alpha_no_xmin <- 1 + length(hist_vals_log_binned$counts) * sum(log(hist_vals_log_binned$counts))^(-1)
+alpha - alpha_no_xmin
+```
+
+## Zadanie 12
+```{r}
+mean_nearest_neighbors_degree <- function(graph) {
+  single_vertex_mean_nearest_neighbors_degree <- function(graph, v) {
+    vertex_neighbors <- neighbors(graph, v, mode = "all") 
+    mean(degree(graph = graph, v = vertex_neighbors))
+  }
+  
+  sapply(V(graph), single_vertex_mean_nearest_neighbors_degree, graph = graph)
+}
+
+df <- data.frame(
+  vertex_degree = degree(enron),
+  mean_nearest_neighbors_degree = mean_nearest_neighbors_degree(enron)
+)
+
+ggplot(df, aes(x = vertex_degree, y = mean_nearest_neighbors_degree)) +
+  geom_point() +
+  labs(x = "Vertex degree", y = "Mean degree of nearest neighbors")
+```
 ## Projekt
-Wszystkie zaimplementowane miary zostały porównane z ich odpowiednikami z biblioteki `igraph` na następująćym grafie:
+Wszystkie zaimplementowane miary zostały porównane z ich odpowiednikami z biblioteki `igraph` na następującym grafie:
 ```{r}
 test_graph <- drake::readd(example_graph_project4)
 plot(test_graph)
