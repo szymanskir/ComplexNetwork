@@ -15,14 +15,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Zadanie 1
 Do wykonania zadań wykorzystano sieć emaili firmy Enron (źródło: http://networkrepository.com/email-EU.php).
 ```{r}
-hist2df <- function(hist_vals) {
-  data.frame(
-    breaks = hist_vals$breaks[seq_along(hist_vals$counts)],
-    counts = hist_vals$counts
-  )
-}
 enron <- drake::readd(enron_graph)
-hist_vals <- hist(degree(enron), plot = FALSE, probability = TRUE)
+hist_vals <- hist(degree(enron), plot = FALSE)
 
 hist_df <- hist2df(hist_vals)
 
@@ -32,7 +26,7 @@ ggplot(hist_df, aes(x = breaks, y = counts)) +
 
 ## Zadanie 2
 Rysunek jest bardziej czytelny -- bliżej mu do linii prostej, której się spodziewamy przy rozkładach potęgowych. Można jednak zauważyć szum bliżej końca narysowanej linii.
-```{r}
+```{r warning=FALSE}
 ggplot(hist_df, aes(x = breaks, y = counts)) + 
   geom_line() + 
   scale_x_log10() +
@@ -90,26 +84,78 @@ alpha_no_xmin <- 1 + length(hist_vals_log_binned$counts) * sum(log(hist_vals_log
 alpha - alpha_no_xmin
 ```
 
+## Zadanie 11
+Zakładamy, że sieć jest nieskorelowana i chcemy pokazać, że
+$$\langle k_{nn} \rangle (k_i) = \frac{\langle k^2 \rangle}{\langle k \rangle}$$
+Wychodzimy od definicji średniego stopnia najbliższego węzłą (dla węzła o stopniu $k_i$) -- (użyto definicji z ksiażki Państwa Fronczaków):
+$$\langle k_{nn} \rangle (k_i) = \sum\limits_{k_j}k_jP(k_j|k_i)$$
+Korzystając wyznaczego wzoru na prawdopobieństwo warunkowe $P(k_i | k_j)$ otrzymujemy
+$$\langle k_{nn} \rangle (k_i) = \sum\limits_{k_j}k_j \frac{P(k_j, k_i) \langle k\rangle}{k_i P(k_i)}$$
+Następnie korzystając z założenia, że sieć jest nieskorelowana, to $P(k_i, k_j) = P_u(k_i, k_j)$ otrzymujemy (wzór na $P_u$ również pochodzi z książki Państwa Fronczaków):
+$$\langle k_{nn} \rangle (k_i) = \sum\limits_{k_j}k_j \frac{k_jk_iP(k_i)P(k_j)}{\langle k \rangle^2} \frac{\langle k\rangle}{k_i P(k_i)} = \sum\limits_{k_j} \frac{k_j^2 P(k_j)}{\langle k \rangle} = \frac{1}{\langle k \rangle}\sum\limits_{k_j}k_j^2P(k_j)$$
+$P(k_j)$ oznacza prawdopodobieństwo wystąpienia wierzchołka o stopniu $k_j$, stąd wyrażenie $\sum\limits_{k_j}k_j^2P(k_j)$ oznacza średnią arytmetyczną kwadratu stopni wierzchołków. Stąd, otrzymujemy:
+$$\langle k_{nn} \rangle (k_i) = \frac{\langle k^2 \rangle}{\langle k \rangle}$$
+
 ## Zadanie 12
 ```{r}
-mean_nearest_neighbors_degree <- function(graph) {
-  single_vertex_mean_nearest_neighbors_degree <- function(graph, v) {
-    vertex_neighbors <- neighbors(graph, v, mode = "all") 
-    mean(degree(graph = graph, v = vertex_neighbors))
-  }
-  
-  sapply(V(graph), single_vertex_mean_nearest_neighbors_degree, graph = graph)
-}
-
-df <- data.frame(
-  vertex_degree = degree(enron),
-  mean_nearest_neighbors_degree = mean_nearest_neighbors_degree(enron)
-)
-
-ggplot(df, aes(x = vertex_degree, y = mean_nearest_neighbors_degree)) +
-  geom_point() +
-  labs(x = "Vertex degree", y = "Mean degree of nearest neighbors")
+drake::readd(enron_graph_characteristic_plot)
 ```
+
+## Zadanie 13
+
+### Ze zmianą rozkładu stopni wierzchołków
+```{r echo=FALSE}
+drake::readd(enron_altered_each_edge_characteristic_plot)
+```
+
+### Bez zmiany rozkładu stopni wierzchołków
+```{r echo=FALSE}
+drake::readd(enron_altered_degseq_kept_characteristic_plot)
+```
+
+## Zadanie 14
+TODO
+
+## Zadanie 15
+```{r}
+enron_altered_degseq_kept <- drake::readd(enron_altered_degseq_kept)
+enron_altered_each_edge <- drake::readd(enron_altered_each_edge)
+
+igraph::assortativity_degree(enron)
+igraph::assortativity_degree(enron_altered_each_edge)
+igraph::assortativity_degree(enron_altered_degseq_kept)
+```
+
+## Zadanie 17
+Średnia odległość mierzy "małość świata", podczas gdy Wydajność mierzy efektywnosć przepływu informacji między węzłami. Żadna z tych miar nie jest lepsza, obie opisują trochę inne wielkości i ich przydatność zależy od sytuacji:
+
+* W sieciach, gdzie występują wierzchołki izolowane Średnia odległość zawsze będzie miała wartości nieskończone. W tego typu przypadkach lepiej skorzystać z Wydajności
+
+* Średnia odległość może się przydać w następującym przypadku: Sieć Transportu miejskiego, gdzie wagi krawędzi oznaczają czas przejazdu od jednego węzła do drugiego. Średnia odległość informuje nas o konkretnej rzeczywistej wartości -- co może nas interesować jeżeli naszym celem jest minimalizacja średniego czasu dojazdu do centrum miasta. 
+
+## Zadanie 18
+TODO
+
+## Zadanie 19
+TODO
+
+## Zadanie 20
+
+### Zwycięzcy nagrody nobla
+```{r}
+drake::readd(nobel_prize_winners_erdos_number_histogram)
+```
+
+### Zwycięzcy medalu fieldsa
+```{r}
+drake::readd(field_medal_winners_erdos_number_histogram)
+```
+
+## Zadanie 21
+```{r}
+knitr::kable(drake::readd(actors_bacon_number_data))
+```
+
 ## Projekt
 Wszystkie zaimplementowane miary zostały porównane z ich odpowiednikami z biblioteki `igraph` na następującym grafie:
 ```{r}
@@ -119,72 +165,16 @@ plot(test_graph)
 
 ### Średni stopień najbliższego węzła
 ```{r}
-mean_nearest_vertex_degree <- function(graph) {
-  nearest_neighbors_count <- degree(graph) %>% sum()
-  
-  nearest_neighbors_degrees <- sapply(V(graph), function(vertex_ind) {
-    neighbors(graph, vertex_ind) %>% 
-      degree(graph, .) %>% 
-      sum()
-  })
-  
-  sum(nearest_neighbors_degrees) / nearest_neighbors_count
-}
-```
-
-```{r}
 mean_nearest_vertex_degree(test_graph)
 ```
 
 ### Wykładnik w sieciach potęgowych
-```{r}
-# source: http://konect.uni-koblenz.de/statistics/power#b408
-network_exponent <- function(vertex_degrees, xmin = 1) {
-  vertex_count <- length(vertex_degrees)
-  
-  alpha <- 1 + vertex_count * sum(log(vertex_degrees / xmin))^(-1)
-  sigma <- (alpha - 1) / sqrt(vertex_count)
-  
-  list(
-    alpha = alpha,
-    sigma = sigma
-  )
-}
-
-```
-
 ```{r}
 sample_vertex_degrees <- poweRlaw::rpldis(1e6, xmin = 100, alpha = -2.5)
 network_exponent(sample_vertex_degrees, xmin = 100)
 ```
 
 ### Współczynnik korelacji
-```{r}
-network_correlation <- function(graph) {
-  edges_count <- ecount(graph)
-  edges <- E(graph)
-  adjacent_vertices <- ends(graph, edges)
-  
-  adjacent_vertices_product <- apply(adjacent_vertices, 1, function(v) {
-    degree(graph, v[1]) * degree(graph, v[2])
-  })
-  adjacent_vertices_sum <- apply(adjacent_vertices, 1, function(v) {
-    degree(graph, v[1]) + degree(graph, v[2])
-  })
-  adjacent_vertices_sum_of_squares <- apply(adjacent_vertices, 1, function(v) {
-    degree(graph, v[1])^2 + degree(graph, v[2])^2
-  })
-  
-  nominator_left <- sum(adjacent_vertices_product) / edges_count
-  nominator_right <- (sum(adjacent_vertices_sum) / (2 * edges_count))^2
-  denominator_left <- sum(adjacent_vertices_sum_of_squares) / (2*edges_count)
-  denominator_right <- (sum(adjacent_vertices_sum)/(2*edges_count))^2
-  
-  (nominator_left - nominator_right) / (denominator_left - denominator_right)
-}
-```
-
-
 ```{r}
 network_correlation(test_graph)
 ```
@@ -198,44 +188,10 @@ igraph::assortativity_degree(test_graph)
 
 #### Wersja 1
 ```{r}
-clustering_coefficient_1 <- function(graph) {
-  node_clustering_coefficient <- function(graph, v) {
-    v_degree <- degree(graph, v)
-    v_neighbors <- neighbors(graph, v) %>% as.numeric()
-    neighborhood_edges_count <- as_adjacency_matrix(graph)[v_neighbors, v_neighbors] %>% 
-      sum() / 2
-    possible_edges_count <- choose(v_degree, 2)
-    
-    clustering_coefficient <- neighborhood_edges_count / possible_edges_count
-    if (is.nan(clustering_coefficient)) {
-      NA
-    } else {
-      clustering_coefficient
-    }
-  }
-  
-  mean(sapply(V(graph), node_clustering_coefficient, graph = graph), na.rm = TRUE)
-}
-
-```
-
-```{r}
 clustering_coefficient_1(test_graph)
 ```
 
 #### Wersja 2
-```{r}
-clustering_coefficient_2 <- function(graph) {
-  triangles_count <- length(triangles(graph)) / 3
-  all_simple_paths_of_legth_2_count <- do.call(c, lapply(V(graph), all_simple_paths, graph = graph)) %>% 
-    keep(function(path) length(path) == 3) %>% 
-    unique() %>% 
-    length() / 2 # 1-2-3 is the same path as 3-2-1
-  
-  (3 * triangles_count) / all_simple_paths_of_legth_2_count
-}
-```
-
 ```{r}
 clustering_coefficient_2(test_graph)
 ```
@@ -247,15 +203,6 @@ igraph::transitivity(test_graph)
 
 ### Średnia odległość
 ```{r}
-mean_distance <- function(graph) {
-  vertex_count <- vcount(graph)
-  vertex_distances <- distances(graph)
-  diag(vertex_distances) <- 0 # d(i,j) where i != j
-  sum(vertex_distances) / (vertex_count * (vertex_count - 1))
-}
-```
-
-```{r}
 mean_distance(test_graph)
 ```
 
@@ -265,15 +212,6 @@ igraph::mean_distance(test_graph)
 
 ### Wydajność
 ```{r}
-efficiency <- function(graph) {
-  vertex_count <- vcount(graph)
-  vertex_distances_inverted <- 1 / distances(graph)
-  diag(vertex_distances_inverted) <- 0 # d(i,j) where i != j
-  sum(vertex_distances_inverted) / (vertex_count * (vertex_count - 1))
-}
-```
-
-```{r}
 efficiency(test_graph)
 ```
 
@@ -282,38 +220,6 @@ brainGraph::efficiency(test_graph, "global")
 ```
 
 ### Pośrednictwo węzłowe
-```{r}
-node_betweenness <- function(graph) {
-  single_node_betweenness <- function(graph, v) {
-    start_nodes <- setdiff(V(graph), v)
-    val <- 0
-    
-    for (start_node in start_nodes) {
-      end_nodes <- V(graph) %>% 
-        keep(function(x) x > start_node) %>% 
-        setdiff(v)
-      
-      for (end_node in end_nodes) {
-        all_paths <- all_shortest_paths(graph = graph,
-                                        from = start_node,
-                                        to = end_node)
-        all_paths_count <- length(all_paths$res)
-        all_between_paths_count <- all_paths$res %>% 
-          keep(function(path) v %in% path) %>% 
-          length()
-        
-        val <- val + all_between_paths_count / all_paths_count
-      }
-    }
-    
-    val
-  }
-  
-  vertex_count <- vcount(graph)
-  node_betweenness <- sapply(V(graph), single_node_betweenness, graph = graph)
-  (2 * node_betweenness) / ((vertex_count - 1) * (vertex_count - 2))
-}
-```
 
 ```{r}
 node_betweenness(test_graph)
