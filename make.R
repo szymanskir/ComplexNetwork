@@ -4,6 +4,8 @@ source("Project3/Project3.R")
 source("Project4/Project4.R")
 
 set.seed(44)
+data(UKfaculty, package = "igraphdata")
+data(USairports, package = "igraphdata")
 
 plan <- drake_plan(
   ############################
@@ -43,7 +45,7 @@ plan <- drake_plan(
   enron_graph_characteristic = vertex_degree_and_mean_neares_neighbors_degree_relation(enron_graph),
   enron_graph_characteristic_plot = plot_relation(enron_graph_characteristic),
   ## Zadanie 13.1
-  enron_altered_each_edge = rewire(enron_graph, each_edge(prob = 0.5)),
+  enron_altered_each_edge = rewire(enron_graph, each_edge(prob = 0.9)),
   enron_altered_each_edge_characteristic = vertex_degree_and_mean_neares_neighbors_degree_relation(enron_altered_each_edge),
   enron_altered_each_edge_characteristic_plot = plot_relation(enron_altered_each_edge_characteristic),
   ## Zadanie 13.2
@@ -60,7 +62,7 @@ plan <- drake_plan(
   ## Zadanie 21
   actors_bacon_number_data = data.frame(
     actor = c("Robert De Niro", "Michał Żebrowski", "Nikodem Rozbicki"),
-    erdos_number = c(1, 3, 4),
+    bacon_number = c(1, 3, 4),
     stringsAsFactors = FALSE
   ),
   project4_report_html = rmarkdown::render(input = knitr_in("Project4/Ryszard.Szymanski-4.Rmd")),

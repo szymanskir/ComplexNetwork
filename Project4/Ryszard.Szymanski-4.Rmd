@@ -33,12 +33,12 @@ ggplot(hist_df, aes(x = breaks, y = counts)) +
   scale_y_log10()
 ```
 
-## Zadanie 3 i 4
+## Zadanie 3
 Zastosowanie logarytmicznego binowania pozwoliło na wygładzenie szumu, które pojawiło się w zadaniu 2
 ```{r}
 enron_degrees <- degree(enron)
 breaks <- exp(seq(log(min(enron_degrees)), log(max(enron_degrees)), length.out = length(hist_vals$breaks)))
-hist_vals_log_binned <- hist(enron_degrees, breaks = breaks, probability = TRUE)
+hist_vals_log_binned <- hist(enron_degrees, breaks = breaks, probability = TRUE, plot = FALSE)
 
 hist_df <- hist2df(hist_vals_log_binned)
 
@@ -49,7 +49,7 @@ ggplot(hist_df, aes(x = breaks, y = counts)) +
 ```
 
 
-## Zadanie 5
+## Zadanie 4
 ```{r}
 enron_cdf <- ecdf(enron_degrees) 
 enron_cdf_summary <- summary(enron_cdf)
@@ -62,29 +62,40 @@ data.frame(
   x = x,
   y = survival_fun_values
 ) %>% ggplot(aes(x = x, y = y)) +
-  geom_line()
+  geom_line() +
+  scale_x_log10() +
+  scale_y_log10()
 ```
 
-## Zadanie 6
+## Zadanie 5
 Najbardziej czytelny jest wykres w którym zastosowano jednocześnie skale logarytmiczne oraz logarytmiczne binowanie.
 
-## Zadanie 7
+## Zadanie 6
+Liniową zależność rozkładów potęgowych w skali podwójnie logarytmicznej można przestawić w następujący sposób:
+$$\ln P(x) = -\alpha \ln x + const$$
+Można zatem wyznaczyć wartość $\alpha$ za pomocą regresji liniowej.
 ```{r}
 lm_fit <- lm(log(counts) ~ log(breaks), data = hist_df)
-lm_fit
+lm_fit_coeffs <- coef(lm_fit)
+-lm_fit_coeffs[2]
 ```
-## Zadanie 8
+## Zadanie 7
+Można również skorzystać z estymatora największej wiarygodności $\alpha = 1 + n \left[\sum\limits_{i=1}^{n}\ln\frac{x_i}{x_{min}}\right]$
 ```{r}
-alpha <- 1 + length(hist_vals_log_binned$counts) * sum(log(hist_vals_log_binned$counts / min(hist_vals_log_binned$counts)))^(-1)
+alpha <- network_exponent(hist_vals_log_binned$counts, xmin = min(hist_vals_log_binned$counts))
 alpha
 ```
-## Zadanie 9
+
+## Zadanie 8
+Dla dużych wartości $n >> 1$ niewielkie przeszacowanie $x_min$ będzie miało niewielki wpływ na wyznaczaną wartość $\alpha$. Przykład:
 ```{r}
-alpha_no_xmin <- 1 + length(hist_vals_log_binned$counts) * sum(log(hist_vals_log_binned$counts))^(-1)
-alpha - alpha_no_xmin
+xmin <- min(hist_vals_log_binned$counts)
+xmin_with_small_error <- 0.9*xmin
+alpha_no_xmin <- network_exponent(hist_vals_log_binned$counts, xmin = xmin_with_small_error)
+alpha_no_xmin
 ```
 
-## Zadanie 11
+## Zadanie 10
 Zakładamy, że sieć jest nieskorelowana i chcemy pokazać, że
 $$\langle k_{nn} \rangle (k_i) = \frac{\langle k^2 \rangle}{\langle k \rangle}$$
 Wychodzimy od definicji średniego stopnia najbliższego węzłą (dla węzła o stopniu $k_i$) -- (użyto definicji z ksiażki Państwa Fronczaków):
@@ -96,27 +107,31 @@ $$\langle k_{nn} \rangle (k_i) = \sum\limits_{k_j}k_j \frac{k_jk_iP(k_i)P(k_j)}{
 $P(k_j)$ oznacza prawdopodobieństwo wystąpienia wierzchołka o stopniu $k_j$, stąd wyrażenie $\sum\limits_{k_j}k_j^2P(k_j)$ oznacza średnią arytmetyczną kwadratu stopni wierzchołków. Stąd, otrzymujemy:
 $$\langle k_{nn} \rangle (k_i) = \frac{\langle k^2 \rangle}{\langle k \rangle}$$
 
-## Zadanie 12
+## Zadanie 11
+Zależność między średniem stopniem najbliższego sąsiada oraz stopniem wierzchołka jest malejąca. Zatem, sieć jest dysasortatywna. 
 ```{r}
 drake::readd(enron_graph_characteristic_plot)
 ```
 
-## Zadanie 13
+## Zadanie 12
+Zastosowano dwie metody przełączania krawędzi, które są dostępne w pakiecie *igraph*:
+
+* *each_edge* -- rozpatruje każdą krawędź i przełącza jej końce z określonym prawdopodobieństwem (ja ustawiłem wartość p-stwa na 0.9). Metoda nie zachowuje stopni wierzchołków
+* *keepin_degseq* -- wykonuje iteracje w trakcie których wykonywana jest próba przełączenia krawędzi w taki sposób, żeby rozkłąd stopni wierzchołków się nie zmienił
 
 ### Ze zmianą rozkładu stopni wierzchołków
+Zależność nadal jest malejąca. Jednak warto zwrócić uwagę jak bardzo zmienił się rozkład stopni wierzchołków.
 ```{r echo=FALSE}
 drake::readd(enron_altered_each_edge_characteristic_plot)
 ```
 
 ### Bez zmiany rozkładu stopni wierzchołków
+Mimo dosyć dużej ilości iteracji (10 * $|V|$) nie widać znaczących zmian na wykresie.
 ```{r echo=FALSE}
 drake::readd(enron_altered_degseq_kept_characteristic_plot)
 ```
 
 ## Zadanie 14
-TODO
-
-## Zadanie 15
 ```{r}
 enron_altered_degseq_kept <- drake::readd(enron_altered_degseq_kept)
 enron_altered_each_edge <- drake::readd(enron_altered_each_edge)
@@ -126,20 +141,24 @@ igraph::assortativity_degree(enron_altered_each_edge)
 igraph::assortativity_degree(enron_altered_degseq_kept)
 ```
 
-## Zadanie 17
-Średnia odległość mierzy "małość świata", podczas gdy Wydajność mierzy efektywnosć przepływu informacji między węzłami. Żadna z tych miar nie jest lepsza, obie opisują trochę inne wielkości i ich przydatność zależy od sytuacji:
+## Zadanie 16
+Lepszą miarą jest *Wydajność*, ponieważ w przypadku sieci niespójnych *Średnia odległość* będzie dawała wartości nieskończone. Dodatkowo odwrotność *Wydajności* można interpretować jako średnią odległość międzywęzłową.
 
-* W sieciach, gdzie występują wierzchołki izolowane Średnia odległość zawsze będzie miała wartości nieskończone. W tego typu przypadkach lepiej skorzystać z Wydajności
+## Zadanie 17 i 18
+```{r}
+graphs <- list(
+  list(graph = enron, name = "enron"),
+  list(graph = UKfaculty, name ="Friendship network at a UK university"),
+  list(graph = USairports, name ="Network of passenger flights between airports in the US")
+)
 
-* Średnia odległość może się przydać w następującym przypadku: Sieć Transportu miejskiego, gdzie wagi krawędzi oznaczają czas przejazdu od jednego węzła do drugiego. Średnia odległość informuje nas o konkretnej rzeczywistej wartości -- co może nas interesować jeżeli naszym celem jest minimalizacja średniego czasu dojazdu do centrum miasta. 
+df <- lapply(graphs, function(graph_conf) summarise_graph(graph_conf$graph, graph_conf$name)) %>% 
+  do.call(rbind, .)
 
-## Zadanie 18
-TODO
+knitr::kable(df)
+```
 
 ## Zadanie 19
-TODO
-
-## Zadanie 20
 
 ### Zwycięzcy nagrody nobla
 ```{r}

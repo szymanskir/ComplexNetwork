@@ -152,3 +152,17 @@ node_betweenness <- function(graph) {
   node_betweenness <- sapply(V(graph), single_node_betweenness, graph = graph)
   (2 * node_betweenness) / ((vertex_count - 1) * (vertex_count - 2))
 }
+
+summarise_graph <- function(graph, name) {
+  vertex_degrees <- degree(graph)
+  list(
+   name = name,
+   is_directed = is_directed(graph),
+   vertex_count = vcount(graph),
+   edge_count = ecount(graph),
+   mean_degree = mean(vertex_degrees),
+   alpha = network_exponent(vertex_degrees, min(vertex_degrees))$alpha,
+   mean_distance = igraph::mean_distance(graph),
+   correlation = igraph::assortativity_degree(graph)
+  )
+}
