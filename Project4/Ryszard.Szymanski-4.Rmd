@@ -1,5 +1,5 @@
 ---
-title: "Project 4"
+title: "MASZ - Projekt 4 Metryki sieci"
 author: "Ryszard Szymański"
 date: "4/4/2020"
 output: html_document
