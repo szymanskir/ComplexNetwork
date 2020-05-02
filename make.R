@@ -66,6 +66,11 @@ plan <- drake_plan(
     stringsAsFactors = FALSE
   ),
   project4_report_html = rmarkdown::render(input = knitr_in("Project4/Ryszard.Szymanski-4.Rmd")),
+  
+  ############################
+  ##############  Project 5
+  ############################
+  project5_report_html = rmarkdown::render(input = knitr_in("Project5/Ryszard.Szymanski-5.Rmd")),
 )
 
 make(plan)
