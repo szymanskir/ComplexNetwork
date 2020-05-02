@@ -1,5 +1,5 @@
 ---
-title: "Projekt 3 - wizualizacja grafów"
+title: "MASZ - Projekt 3 wizualizacja grafów"
 author: "Ryszard Szymański"
 date: "3/20/2020"
 output: 
@@ -15,7 +15,7 @@ library(igraph)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Functions
+## Definicje funkcji
 ```{r}
 plot_histogram <- function(values) {
   values_df <- data.frame(
@@ -108,14 +108,13 @@ bipartite_graph_hist <- plot_histogram(degree(bipartite_graph))
 ## Czym mogą różnić się sieci o tym samym rozkładzie?
 
 ### Sieć dysasortatywna - przykład
-Sieć klientów sieci sklepów Lidl, gdzie połączenie oznacza dokonanie transakcji między węzłami. W takiej sieci można by było zauważyć podgrafy zbliżone do grafów typu "gwiazda" (star graph).
+Sieć klientów sklepów Lidl, gdzie połączenie oznacza dokonanie transakcji między węzłami. W takiej sieci można by było zauważyć podgrafy zbliżone do grafów typu "gwiazda" (star graph).
 
 ### Sieć asortatywna
-Sieć odizolowanych od siebie plemion o bardzo różnej ilości wielości społeczności. Taka sieć składałaby się z podgrafów "prawie-pełnych" (prawie wszyscy się znają w obrębie plemienia)
+Sieć odizolowanych od siebie plemion o bardzo różnej wielkości społeczności. Taka sieć składałaby się z podgrafów "prawie-pełnych" (prawie wszyscy się znają w obrębie plemienia)
 
 ## Inne cechy wybranych sieci rzeczywistych
 
-* Fraktalne sieci dystrybucyjne
 * Sieci hierarchiczne - np. sieć pracowników firmy IT. Podstawowym modułem jest zespół pracowników pracujących w ramach jednego zespołu. Zespoły mogą pracować w konkretnych technologiach np. Java, Python. Jeszcze wyżej może być wspólny obszar technologii np. aplikacje webowe.
 * Sieci ze strukturą społeczną - np. sieć pracowników firmy Enron, w której połączenie oznacza wymiane maili między pracownikami (na podstawie danych: https://www.cs.cmu.edu/~enron/)
 
