@@ -1,0 +1,45 @@
+---
+title: "MASZ - Projekt 6 Sieci ewoluujące"
+author: "Ryszard Szymański"
+date: "5/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Zadania wykładowe
+
+## Zadanie 1
+Zaimplementowane funkcję `create_barabasi_albert_graph`:
+```{r}
+create_barabasi_albert_graph
+```
+
+## Zadanie 2 
+Poniżej przedstawiono animację z tworzenia grafu
+```{r}
+knitr::include_app("ba_graph_animation.gif")
+```
+
+## Zadanie 3
+```{r, warning=FALSE}
+ba_graph_large <- drake::readd(ba_graph_large)
+
+step_degrees_list <- ba_graph_large$steps %>% 
+  lapply(degree)
+  
+breaks <- step_degrees_list %>% unlist() %>% unique() %>% sort()
+lapply(step_degrees_list, function(degrees) {
+  hist_vals <- hist(degrees, breaks = breaks, plot = F)
+  data.frame(breaks = hist_vals$breaks[-1], counts = hist_vals$counts)
+}) %>% bind_rows() %>% 
+  group_by(breaks) %>% 
+  summarise(counts = mean(counts)) %>% 
+  ggplot(aes(x = breaks, y = counts)) +
+  geom_point() +
+  geom_smooth() +
+  scale_x_log10() +
+  scale_y_log10()
+```

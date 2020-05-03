@@ -3,6 +3,7 @@ library(ggplot2)
 source("Project3/Project3.R")
 source("Project4/Project4.R")
 source("Project5/Project5.R")
+source("Project6/Project6.R")
 
 set.seed(44)
 data(UKfaculty, package = "igraphdata")
@@ -83,7 +84,16 @@ plan <- drake_plan(
       knitr_in("Project5/Ryszard.Szymanski-5.Rmd"),
       quiet = TRUE
     )
-  )
+  ),
+  
+  
+  ############################
+  ##############  Project 6
+  ############################
+  ba_graph = create_barabasi_albert_graph(3, 2, 100, keep_steps = TRUE),
+  ba_graph_animation = make_ba_animation(ba_graph, "Project6/ba_graph_animation.gif"),
+  ba_graph_large = create_barabasi_albert_graph(3, 2, 1000, keep_steps = TRUE),
+  project6_report_html = rmarkdown::render(input = knitr_in("Project6/Ryszard.Szymanski-6.Rmd")),
 )
 
 make(plan)
