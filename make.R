@@ -2,6 +2,7 @@ library(drake)
 library(ggplot2)
 source("Project3/Project3.R")
 source("Project4/Project4.R")
+source("Project5/Project5.R")
 
 set.seed(44)
 data(UKfaculty, package = "igraphdata")
@@ -70,7 +71,19 @@ plan <- drake_plan(
   ############################
   ##############  Project 5
   ############################
-  project5_report_html = rmarkdown::render(input = knitr_in("Project5/Ryszard.Szymanski-5.Rmd")),
+  project5_report_html = callr::r(
+    function(...) {
+      library(drake)
+      library(magrittr)
+      library(visNetwork)
+      source("Project5/Project5.R")
+      rmarkdown::render(...)
+    },
+    args = list(
+      knitr_in("Project5/Ryszard.Szymanski-5.Rmd"),
+      quiet = TRUE
+    )
+  )
 )
 
 make(plan)

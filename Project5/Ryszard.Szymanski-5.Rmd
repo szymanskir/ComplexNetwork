@@ -9,22 +9,293 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# Zadania wykładowe
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+## Zadanie 1
+Przygotowano funckję `create_er_graph_adjacency_matrix`:
+```{r, echo = FALSE}
+create_er_graph_adjacency_matrix
 ```
 
-## Including Plots
+Wygenerowano za jej pomocą losowy graf o 100 wierzchołkach:
+```{r}
+create_random_graph <- function(n, p) {
+  adjacency_matrix <- create_er_graph_adjacency_matrix(n, p)
+  igraph::graph_from_adjacency_matrix(adjacency_matrix, mode = "undirected")
+}
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+graph <- create_random_graph(100, 0.2)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Zadanie 2
+Wizualizacje wygenerowanego grafu przedstawiono poniżej:
+```{r, message=FALSE, warning=FALSE, out.width="100%"}
+plot_ggraph(graph)
+```
+
+## Zadanie 3
+```{r}
+plot_degree_hist(graph)
+```
+
+## Zadanie 4
+Spodziewamy się, że rozkład stopni wierzchołków będzie zbiegać do rozkładu Poissona dla dużych N.
+
+## Zadanie 5
+Można to uzasadnić za pomocą **Twierdzenia Poissona**: Jeśli $n \to \infty$, $p \to 0$ oraz $np \to \lambda > 0$
+, to:
+$${{n}\choose{k}} p^k(1-p)^{n-k} \to_{n \to \infty} \frac{\lambda^k}{k!}\exp^{-\lambda}$$
+W naszym $n$ to liczba wierzchołków, $p$ - p-stwo krawędzi, oraz $np = \left<k\right>$
+
+## Zadanie 6
+```{r}
+perform_single_simulation_comparison <- function(N, p) {
+  graph <- create_random_graph(N, p)
+  lambda <- mean(degree(graph))
+  poisson_vals <- rpois(n = N, lambda = lambda)
+  binom_vals <- rbinom(N, N, prob = p)
+  
+  data.frame(
+    degree = degree(graph),
+    poisson = poisson_vals,
+    binom = binom_vals
+  )
+}
+
+run_tests <- function(data) {
+  poissonic_pval <- chisq.test(data$degree, data$poisson)
+  binomic_pval <- chisq.test(data$degree, data$binom)
+  
+  data.frame(
+    "poissonowskość" = poissonic_pval$p.value,
+    "bernoullowskość" = binomic_pval$p.value
+  )
+}
+
+plot_simulation_results <- function(data) {
+  data %>%
+    pivot_longer(cols = everything(), names_to = "distr_type", values_to = "k") %>% 
+    ggplot(aes(x = k, fill = distr_type)) +
+    geom_bar(show.legend = FALSE) + 
+    labs(x = "k", y = "P(k)") + 
+    facet_wrap(. ~ distr_type)
+}
+
+summarise_simulation <- function(data) {
+  run_tests(data) %>% 
+    knitr::kable()
+}
+```
+
+### N = 100, p = 0.8
+```{r, warning=FALSE}
+simulation_data <- perform_single_simulation_comparison(100, 0.8)
+plot_simulation_results(simulation_data)
+summarise_simulation(simulation_data)
+```
+
+### N = 1e4, p = 0.1
+```{r, warning=FALSE}
+simulation_data <- perform_single_simulation_comparison(1e4, 0.1)
+plot_simulation_results(simulation_data)
+summarise_simulation(simulation_data)
+```
+
+### N = 1e4, p = 0.9
+```{r, warning=FALSE}
+simulation_data <- perform_single_simulation_comparison(1e4, 0.9)
+plot_simulation_results(simulation_data)
+summarise_simulation(simulation_data)
+```
+
+### N = 100, p = 0.1
+```{r, warning=FALSE}
+simulation_data <- perform_single_simulation_comparison(100, 0.1)
+plot_simulation_results(simulation_data)
+summarise_simulation(simulation_data)
+```
+
+## Zadanie 7
+* Model działa najlepiej dla dużych wartości $N$ i małych wartości $p$
+* Model działa dużo gorzej dla dużych wartości $p$
+
+## Zadanie 9
+```{r}
+erdos_renyi_clustering_coefficient_simulation <- function(n, probabilities, iterations_count) {
+  single_prob_sim <- function(p) {
+    sapply(seq_len(iterations_count), function(x) {
+      graph <- create_random_graph(n, p)
+      igraph::transitivity(graph)
+    }) %>% mean()
+  }
+  
+  sapply(probabilities, single_prob_sim)
+}
+
+probabilities <- seq(0.01, 1, length.out = 50)
+simulation_result <- erdos_renyi_clustering_coefficient_simulation(100, probabilities, 100)
+
+data.frame(probability = probabilities, clustering_coefficient = simulation_result) %>% 
+  ggplot(aes(x = probabilities, y = clustering_coefficient)) +
+  geom_point() +
+  geom_line()
+```
+Na powyższym wykresie można zauważyć liniową zależność między $\left<C\right>$ oraz $p$ stąd rozwiązanie $\left<C\right> = p$ jest prawidłowe.
+
+
+## Zadanie 10
+Nie jest to zawsze możliwe np. $\{1, 3\}$. Myślę, że dobrym warunkiem na początek byłoby ograniczenie następujące ograniczenie sumy konfiguracji stopni przez liczbę możliwych krawędzi. Dodatkowo suma ta nie może być liczą nieparzystą -- każda krawędź ma dwa końce.
+
+
+## Zadanie 11
+Zaimplementowano funkcje `create_block_model_graph_adjacency_matrix` w celu oblicznaia macierzy incydencji w modelu blokowym
+```{r}
+create_block_model_graph_adjacency_matrix
+```
+
+### $P_{in}=1, P_{out}=0$
+```{r}
+create_block_model_graph_adjacency_matrix(80, 20, 1, 0) %>% 
+  igraph::graph_from_adjacency_matrix(mode = "undirected") %>% 
+  visIgraph(layout = "layout_with_fr")
+```
+
+### $P_{in}=0.8, P_{out}=0.2$
+```{r}
+create_block_model_graph_adjacency_matrix(80, 20, 0.8, 0.2) %>% 
+  igraph::graph_from_adjacency_matrix(mode = "undirected") %>% 
+  visIgraph(layout = "layout_with_fr")
+```
+
+### $P_{in}=0.6, P_{out}=0.4$
+```{r}
+create_block_model_graph_adjacency_matrix(80, 20, 0.6, 0.4) %>% 
+  igraph::graph_from_adjacency_matrix(mode = "undirected") %>% 
+  visIgraph(layout = "layout_with_fr")
+```
+
+**Wpływ parametrów na wyniki** im mniejsza różnica między prawdopodobieńtswami tym trudniej zobaczyć na wykresie konkretne społeczności.
+
+## Zadanie 12
+```{r}
+watts_strogatz_params <- function(n, k, probabilities) {
+  graphs <- lapply(probabilities, function(p) sample_smallworld(1, n, k, p))
+  
+  data.frame(
+    probabilities = probabilities,
+    clustering_coeff = sapply(graphs, transitivity),
+    shortest_path = sapply(graphs, mean_distance)
+  )
+}
+N <- 1000
+j <- 10
+probabilities <- c(
+  seq(1e-4, 1e-3, length.out = 4), 
+  seq(1e-3, 1e-2, length.out = 7), 
+  seq(1e-2, 1e-1, length.out = 6), 
+  seq(0.1, 1, length.out = 10)
+)
+params <- watts_strogatz_params(1000, 10, probabilities)
+
+c_0 <- (3 * j - 3) / (4 * j - 2) 
+l_0 <- N / (4 * j)
+
+params %>% 
+  mutate(clustering_coeff = clustering_coeff / c_0,
+         shortest_path = shortest_path / l_0) %>% 
+  pivot_longer(cols = clustering_coeff:shortest_path, names_to = "parameter_type", values_to = "parameter_value") %>% 
+  ggplot(aes(x = probabilities, y = parameter_value, group = parameter_type, color = parameter_type)) +
+  geom_point() + 
+  geom_line() + 
+  scale_x_log10()
+```
+
+Najkrótsza droga znaczące się zmniejsza podczas gdy współczynnik gronowania pozostaje wysoki -- jest to charakterystyczna cecha sieci małych światów. Niewielka liczba skrótów jest potrzeba do uzyskania efektu małych światów, przy jednoczesnym zachowaniu wysokiego współczynnika gronowania.
+
+# Projekt
+
+## Zadanie 13
+* Ustalana jest liczba węzłów $N$ należących do grafu
+* Sposród wszystkich możliwych ${N\choose{2}}$ par wezłów wybierane jest $E$ par, które zostają połączone krawędzią. Każda para może zostać wybrana z tym samym p-stwem, stąd p-stwo połączenia dwóch dowolnych wierzchołków jest równe $p = \frac{E}{{n\choose(2)}}$. Można potem przeprowadzić rozumowanie analogiczne jak dla grafów $G_{n, p}$.
+
+```{r}
+create_random_graph_ne <- function(n, e) {
+  all_vertex_pairs <- combn(10, 2)
+  sample_inds <- sample(ncol(all_vertex_pairs), e)
+  
+  adjacency_matrix <- matrix(0, nrow = n, ncol = n)
+  rows <- all_vertex_pairs[1, sample_inds]
+  cols <- all_vertex_pairs[2, sample_inds]
+  for (k in seq_len(e)) {
+    adjacency_matrix[rows[k], cols[k]] <- 1
+    adjacency_matrix[cols[k], rows[k]] <- 1
+  }
+  
+  igraph::graph_from_adjacency_matrix(adjacency_matrix, mode = "undirected")
+}
+```
+
+```{r}
+create_random_graph_ne(20, 7) %>% 
+  plot_ggraph()
+```
+
+## Zadanie 14
+Zaimplementowano algorytm Havela-Hakimiego
+```{r}
+havel_hakimi <- function(graph, degrees) {
+  if (ncol(degrees) == 0) {
+   return(graph)
+  }
+  
+  ordered_inds <- order(degrees[1, ], decreasing = TRUE) 
+  degrees <- degrees[, ordered_inds]
+  
+  if (degrees[1, 1] == 0) {
+   return(graph)
+  }
+  
+  highest_degree_vertex <- degrees[2, 1]
+  highest_degree_vertex_degree <- degrees[1, 1]
+  
+  next_degrees <- degrees[, 2:ncol(degrees), drop = FALSE]
+  vertices_inds_to_connect_with <- seq_len(highest_degree_vertex_degree) 
+  
+  next_degrees[1, vertices_inds_to_connect_with] <- next_degrees[1, vertices_inds_to_connect_with] - 1 
+  vertices_to_connect_with <- next_degrees[2, vertices_inds_to_connect_with]
+  
+  for (v in vertices_to_connect_with) {
+   graph <- graph + edge(highest_degree_vertex, v)
+  }
+  
+  havel_hakimi(graph, next_degrees)
+}
+
+create_random_graph_config_model <- function(degrees) {
+  stopifnot(sum(degrees) %% 2 == 0)
+  stopifnot(sum(degrees)/2 <= ncol(combn(length(degrees), 2)))
+  N <- length(degrees)
+  g <- igraph::make_empty_graph(n = N, directed = FALSE)
+  
+  degree_matrix <- matrix(
+    c(degrees, seq_len(length(degrees))),
+    nrow = 2,
+    byrow = TRUE
+  )
+  
+  havel_hakimi(g, degree_matrix)
+}
+```
+
+## Przykład zbiegania dla małego grafu
+```{r}
+create_random_graph_config_model(c(1, 1, 1, 2, 2, 3)) %>% 
+  visIgraph()
+```
+
+## Przykład zbiegania dla większego grafu
+```{r}
+degrees <- erdos.renyi.game(200, 0.2) %>% degree()
+create_random_graph_config_model(degrees) %>% 
+  visIgraph()
+```
