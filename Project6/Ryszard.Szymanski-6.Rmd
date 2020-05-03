@@ -18,7 +18,7 @@ create_barabasi_albert_graph
 ```
 
 ## Zadanie 2 
-Poniżej przedstawiono animację z tworzenia grafu
+Poniżej przedstawiono animację z tworzenia grafu o 103 wierzchołkach, gdzie w każdej iteracji były dodawane 2 krawedzie.
 ```{r}
 knitr::include_app("ba_graph_animation.gif")
 ```
@@ -27,19 +27,144 @@ knitr::include_app("ba_graph_animation.gif")
 ```{r, warning=FALSE}
 ba_graph_large <- drake::readd(ba_graph_large)
 
-step_degrees_list <- ba_graph_large$steps %>% 
+calculate_mean_degrees_hist <- function(graphs) {
+  step_degrees_list <- graphs %>% 
   lapply(degree)
   
-breaks <- step_degrees_list %>% unlist() %>% unique() %>% sort()
-lapply(step_degrees_list, function(degrees) {
-  hist_vals <- hist(degrees, breaks = breaks, plot = F)
-  data.frame(breaks = hist_vals$breaks[-1], counts = hist_vals$counts)
-}) %>% bind_rows() %>% 
-  group_by(breaks) %>% 
-  summarise(counts = mean(counts)) %>% 
+  breaks <- step_degrees_list %>% unlist() %>% unique() %>% sort()
+  mean_degrees_hist <- lapply(step_degrees_list, function(degrees) {
+    hist_vals <- hist(degrees, breaks = breaks, plot = F)
+    data.frame(breaks = hist_vals$breaks[-1], counts = hist_vals$density)
+  }) %>% bind_rows() %>% 
+    group_by(breaks) %>% 
+    summarise(counts = mean(counts))
+}
+
+mean_degrees_hist <- calculate_mean_degrees_hist(ba_graph_large$steps)
+
+mean_degrees_hist %>% 
   ggplot(aes(x = breaks, y = counts)) +
   geom_point() +
   geom_smooth() +
   scale_x_log10() +
   scale_y_log10()
 ```
+
+Uzyskany rozkład jest rozkładem potęgowym.
+
+## Zadanie 4
+Zbadano wartość współczynnika $\alpha$ względem każdego kroku ewolucji tworzonej sieci. Na poniższym wykresie przedstawiono wynik:
+```{r}
+get_single_network_exponent <- function(graph) {
+  vertex_degrees <- degree(graph)
+  min_degree <- min(vertex_degrees)
+  network_exponent(vertex_degrees, min_degree)$alpha
+}
+
+alphas <- sapply(ba_graph_large$steps, get_single_network_exponent) 
+data.frame(time_step = seq_along(ba_graph_large$steps), alphas = alphas) %>%
+  ggplot(aes(x = time_step, y = alphas)) +
+  geom_point()
+```
+
+Poza pierwszymi 30 iteracjami wartości współczynnika $\alpha$ utrzymują się w przediale $\[3, 3.3\]$. Zgadza się to z wynikami teoretycznymi z wykładu.
+
+## Zadanie 5
+```{r warning=FALSE}
+graph_degrees <- lapply(seq_along(ba_graph_large$steps), function(graph_ind) {
+  graph <- ba_graph_large$steps[[graph_ind]]
+  degrees <- degree(graph)
+  
+  data.frame(
+    degree = degrees,
+    vertices = seq_along(degrees),
+    time_frame = graph_ind
+  )
+}) %>% bind_rows() %>% filter(vertices %in% seq(10, 200, 40))
+
+ggplot(graph_degrees, aes(x = time_frame, y = degree, group = vertices, color = factor(vertices))) +
+  geom_point()
+```
+
+Uzyskane krzywe są zgodne z teorią:
+
+* Krzywe odpowiadają wykresowi pierwiastka
+* Krzywa dla wierzchołkowych dodawanych w późniejszych krokach jest coraz bardziej spłaszczona
+
+## Zadanie 6
+```{r, warning=FALSE}
+mean_degrees_hist$type = "simulation"
+theoretical_results <- data.frame(
+  breaks = mean_degrees_hist$breaks,
+  counts = (2 * 4^2) / (mean_degrees_hist$breaks)^3,
+  type = "theory"
+)
+
+bind_rows(mean_degrees_hist, theoretical_results) %>% 
+  ggplot(aes(x = breaks, y = counts, color = type, group = type)) +
+  geom_point() +
+  geom_line() +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+Wartośći otrzymane za pomocą uzyskanego wzoru $P(k) = \frac{2m^2}{k^3}$ pokrywają się z empirycznymi wynikami zadania 3.
+
+# Projekt
+
+## Zadanie 9
+Przygotowano funkcję `create_barabasi_albert_graph_model_a`, za pomocą której wygenerowano 10 grafów o 1010 wierzchołkach, gdzie w każdej iteracji dodawane było $8$ krawędzi.
+```{r}
+create_barabasi_albert_graph_model_a
+```
+
+Uzyskane wyniki pokrywają się rozważaniami teoretycznymi $P(k) = \frac{1}{m} \exp{\left(1 - \frac{k}{m} \right)}$.
+```{r, warning=FALSE}
+ba_graphs_model_a <- drake::readd(ba_graphs_model_a)
+mean_degrees_hist <- calculate_mean_degrees_hist(ba_graphs_model_a)
+
+mean_degrees_hist$type = "simulation"
+theoretical_results <- data.frame(
+  breaks = mean_degrees_hist$breaks,
+  counts = (1/8) * exp(1 - mean_degrees_hist$breaks / 8),
+  type = "theory"
+)
+
+bind_rows(mean_degrees_hist, theoretical_results) %>% 
+  ggplot(aes(x = breaks, y = counts, color = type, group = type)) +
+  geom_point() +
+  geom_line() +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+
+## Zadanie 10
+Przygotowano funkcję `create_barabasi_albert_graph_model_b`, za pomocą której wygenerowano 3 grafy o 100 wierzchołkach i 1000 krawędzi. Każdy z nich został wygenerowany z różną liczbą iteracji: 50, 500, 10000.
+```{r}
+create_barabasi_albert_graph_model_b
+```
+
+Poniżej przedstawiono historamy dla wygenerowanych wykresów:
+```{r, warning=FALSE}
+ba_graphs_model_b <- drake::readd(ba_graphs_model_b)
+iters <- c(50, 500, 10000)
+mean_degrees_hist <- lapply(seq_along(ba_graphs_model_b), function(graph_ind) {
+  graph <- ba_graphs_model_b[[graph_ind]]
+  iters_count <- iters[graph_ind]
+  mean_degrees_hist <- calculate_mean_degrees_hist(list(graph))
+  
+  mean_degrees_hist$iters <- iters_count
+  mean_degrees_hist
+}) %>% bind_rows()
+
+mean_degrees_hist %>% 
+  ggplot(aes(x = breaks, y = counts, color = factor(iters))) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(. ~ iters, scales = "free") +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+Przy $t \to \infty$ histogram dąży do rozkładu potęgowego, co jest zgodne z opisem modelu B w książce Państwa Frączaków.
