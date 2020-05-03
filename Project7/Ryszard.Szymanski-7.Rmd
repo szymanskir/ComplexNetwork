@@ -1,0 +1,14 @@
+---
+title: "MASZ - Projekt 7 Probabilistyczne aspekty sieci złożonych"
+author: "Ryszard Szymański"
+date: "5/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Zadania wykładowe
+
+# Projekt

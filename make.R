@@ -97,6 +97,11 @@ plan <- drake_plan(
   ba_graphs_model_a = lapply(1:10, function(x) create_barabasi_albert_graph_model_a(10, 8, 1000)),
   ba_graphs_model_b = lapply(c(50, 500, 10000), function(x) create_barabasi_albert_graph_model_b(100, 1000, x)),
   project6_report_html = rmarkdown::render(input = knitr_in("Project6/Ryszard.Szymanski-6.Rmd")),
+  
+  ############################
+  ##############  Project 7
+  ############################
+  project7_report_html = rmarkdown::render(input = knitr_in("Project7/Ryszard.Szymanski-7.Rmd")),
 )
 
 make(plan)
