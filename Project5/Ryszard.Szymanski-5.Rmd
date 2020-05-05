@@ -12,12 +12,12 @@ knitr::opts_chunk$set(echo = TRUE)
 # Zadania wykładowe
 
 ## Zadanie 1
-Przygotowano funckję `create_er_graph_adjacency_matrix`:
+Przygotowano funkcję `create_er_graph_adjacency_matrix`:
 ```{r, echo = FALSE}
 create_er_graph_adjacency_matrix
 ```
 
-Wygenerowano za jej pomocą losowy graf o 100 wierzchołkach:
+Wygenerowano za jej pomocą losowy graf o 100 wierzchołkach i prawdopodobieństwie wystąpienia krawędzi o wartości 0.2
 ```{r}
 create_random_graph <- function(n, p) {
   adjacency_matrix <- create_er_graph_adjacency_matrix(n, p)
@@ -34,6 +34,7 @@ plot_ggraph(graph)
 ```
 
 ## Zadanie 3
+Uzyskany histogram nie przypomina takiego, którego byśmy się spodziewali z reguły przy sieciach -- brak grubych ogonów. Jednak wynik pokrywa się ze spodziewaną "poissonowskością".
 ```{r}
 plot_degree_hist(graph)
 ```
@@ -48,6 +49,7 @@ $${{n}\choose{k}} p^k(1-p)^{n-k} \to_{n \to \infty} \frac{\lambda^k}{k!}\exp^{-\
 W naszym $n$ to liczba wierzchołków, $p$ - p-stwo krawędzi, oraz $np = \left<k\right>$
 
 ## Zadanie 6
+Przeprowadzono symulacje dla grafów o różnych kombinacjach wartości parametrów $p$ i $N$. Poissonowskość i Bernoullowskosć weryfikowano za pomocą testu chi-kwadrat.
 ```{r}
 perform_single_simulation_comparison <- function(N, p) {
   graph <- create_random_graph(N, p)
@@ -140,15 +142,16 @@ data.frame(probability = probabilities, clustering_coefficient = simulation_resu
   geom_point() +
   geom_line()
 ```
+
 Na powyższym wykresie można zauważyć liniową zależność między $\left<C\right>$ oraz $p$ stąd rozwiązanie $\left<C\right> = p$ jest prawidłowe.
 
 
 ## Zadanie 10
-Nie jest to zawsze możliwe np. $\{1, 3\}$. Myślę, że dobrym warunkiem na początek byłoby ograniczenie następujące ograniczenie sumy konfiguracji stopni przez liczbę możliwych krawędzi. Dodatkowo suma ta nie może być liczą nieparzystą -- każda krawędź ma dwa końce.
+Nie jest to zawsze możliwe np. $\{1, 3\}$. Myślę, że dobrym warunkiem na początek byłoby ograniczenie sumy konfiguracji stopni przez dwukrotną liczbę możliwych krawędzi. Dodatkowo suma ta nie może być liczą nieparzystą -- każda krawędź ma dwa końce.
 
 
 ## Zadanie 11
-Zaimplementowano funkcje `create_block_model_graph_adjacency_matrix` w celu oblicznaia macierzy incydencji w modelu blokowym
+Zaimplementowano funkcje `create_block_model_graph_adjacency_matrix` w celu obliczania macierzy incydencji w modelu blokowym. Przeprowadzono symulacje dla różnych wartości parametrów $P_{in}$ oraz $P_{out}$
 ```{r}
 create_block_model_graph_adjacency_matrix
 ```
@@ -174,7 +177,9 @@ create_block_model_graph_adjacency_matrix(80, 20, 0.6, 0.4) %>%
   visIgraph(layout = "layout_with_fr")
 ```
 
-**Wpływ parametrów na wyniki** im mniejsza różnica między prawdopodobieńtswami tym trudniej zobaczyć na wykresie konkretne społeczności.
+**Wpływ parametrów na wyniki**:
+
+* im mniejsza różnica między prawdopodobieńtswami tym trudniej zobaczyć na wykresie konkretne społeczności.
 
 ## Zadanie 12
 ```{r}
@@ -210,7 +215,7 @@ params %>%
   scale_x_log10()
 ```
 
-Najkrótsza droga znaczące się zmniejsza podczas gdy współczynnik gronowania pozostaje wysoki -- jest to charakterystyczna cecha sieci małych światów. Niewielka liczba skrótów jest potrzeba do uzyskania efektu małych światów, przy jednoczesnym zachowaniu wysokiego współczynnika gronowania.
+Najkrótsza droga znacząco się zmniejsza podczas gdy współczynnik gronowania pozostaje wysoki -- jest to charakterystyczna cecha sieci małych światów. Niewielka liczba skrótów jest potrzeba do uzyskania efektu małych światów, przy jednoczesnym zachowaniu wysokiego współczynnika gronowania.
 
 # Projekt
 
@@ -241,7 +246,7 @@ create_random_graph_ne(20, 7) %>%
 ```
 
 ## Zadanie 14
-Zaimplementowano algorytm Havela-Hakimiego
+Zaimplementowano algorytm Havela-Hakimiego, który rekurencyjnie weryfikuje możliwość zbudowania grafu o określonej liście stopni wierzchołków.
 ```{r}
 havel_hakimi <- function(graph, degrees) {
   if (ncol(degrees) == 0) {
@@ -288,12 +293,14 @@ create_random_graph_config_model <- function(degrees) {
 ```
 
 ## Przykład zbiegania dla małego grafu
+Wygenerowano graf o następującej sekwencji stopni wierzchołków: $\{1, 1, 1, 2, 2, 3\}$
 ```{r}
 create_random_graph_config_model(c(1, 1, 1, 2, 2, 3)) %>% 
   visIgraph()
 ```
 
 ## Przykład zbiegania dla większego grafu
+Najpierw wygenerowano pożądaną sekwencje stopni wierzchołków pomocą modelu ER, następnie na jej podstawie wygenerowano graf za pomocą modelu konfiguracyjnego.
 ```{r}
 degrees <- erdos.renyi.game(200, 0.2) %>% degree()
 create_random_graph_config_model(degrees) %>% 
