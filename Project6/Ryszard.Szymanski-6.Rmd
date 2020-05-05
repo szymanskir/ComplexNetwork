@@ -67,7 +67,7 @@ data.frame(time_step = seq_along(ba_graph_large$steps), alphas = alphas) %>%
   geom_point()
 ```
 
-Poza pierwszymi 30 iteracjami wartości współczynnika $\alpha$ utrzymują się w przediale $\[3, 3.3\]$. Zgadza się to z wynikami teoretycznymi z wykładu.
+Poza pierwszymi 30 iteracjami wartości współczynnika $\alpha$ utrzymują się w przediale $\left[3; 3.3\right]$. Zgadza się to z wynikami teoretycznymi z wykładu.
 
 ## Zadanie 5
 ```{r warning=FALSE}
@@ -108,7 +108,7 @@ bind_rows(mean_degrees_hist, theoretical_results) %>%
   scale_y_log10()
 ```
 
-Wartośći otrzymane za pomocą uzyskanego wzoru $P(k) = \frac{2m^2}{k^3}$ pokrywają się z empirycznymi wynikami zadania 3.
+Wartości otrzymane za pomocą uzyskanego wzoru $P(k) = \frac{2m^2}{k^3}$ pokrywają się z empirycznymi wynikami zadania 3.
 
 # Projekt
 
