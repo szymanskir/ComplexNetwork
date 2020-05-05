@@ -4,6 +4,7 @@ source("Project3/Project3.R")
 source("Project4/Project4.R")
 source("Project5/Project5.R")
 source("Project6/Project6.R")
+source("Project7/Project7.R")
 
 set.seed(44)
 data(UKfaculty, package = "igraphdata")
@@ -101,6 +102,10 @@ plan <- drake_plan(
   ############################
   ##############  Project 7
   ############################
+  simulation_vertex_count = 400,
+  simulation_probability = 0.01,
+  simulation_results = run_simulations(1000, simulation_vertex_count, simulation_probability),
+  simulation_results_plot = plot_simulation_results(simulation_results),
   project7_report_html = rmarkdown::render(input = knitr_in("Project7/Ryszard.Szymanski-7.Rmd")),
 )
 

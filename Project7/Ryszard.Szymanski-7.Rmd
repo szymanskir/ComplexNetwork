@@ -11,4 +11,67 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Zadania wykładowe
 
+## Zadanie 4
+```{r}
+ba_graph_large <- drake::readd(ba_graph_large)
+
+calculate_mean_degrees_hist <- function(graphs) {
+  step_degrees_list <- graphs %>%  lapply(degree)
+  
+  breaks <- step_degrees_list %>% unlist() %>% unique() %>% sort()
+  mean_degrees_hist <- lapply(step_degrees_list, function(degrees) {
+    hist_vals <- hist(degrees, breaks = breaks, plot = F)
+    data.frame(breaks = hist_vals$breaks[-1], counts = hist_vals$density)
+  }) %>% bind_rows() %>% 
+    group_by(breaks) %>% 
+    summarise(counts = mean(counts))
+}
+
+mean_degrees_hist <- calculate_mean_degrees_hist(ba_graph_large$steps)
+k <- 4
+get_theoretical_results <- function(k, m) {
+  (2 * k^2) / m^3
+}
+get_masters_equation_results <- function(k, m) {
+  (2 * m * (m + 1)) / (k * (k + 1) * (k + 2))
+}
+
+mean_degrees_hist$type = "symulacja"
+continuous_time_method_results <- data.frame(
+  breaks = mean_degrees_hist$breaks,
+  counts = get_theoretical_results(k, mean_degrees_hist$breaks),
+  type = "metoda czasu ciągłego"
+)
+masters_equation_results <- data.frame(
+  breaks = mean_degrees_hist$breaks,
+  counts = get_masters_equation_results(mean_degrees_hist$breaks, k),
+  type = "równanie master"
+)
+
+
+bind_rows(mean_degrees_hist, continuous_time_method_results, masters_equation_results) %>% 
+  ggplot(aes(x = breaks, y = counts, color = type, group = type)) +
+  geom_point() +
+  geom_line() +
+  scale_x_log10() +
+  scale_y_log10()
+```
+Na podstawie trudno określić, które rozwiązanie lepiej dopasowuje się do rozkładu empirycznego.
+
+## Zadanie 5
+
+## Zadanie 12
+Przeprowadzono symulacje w trakcie której wygenerowano 1000 grafów o 400 wierzchołkach i prawdopodobieńtswa wystąpienia krawędzi równym 0.01. Większość wierzchołków zaczyna znajdować się w klastrze perkolacyjnym przy $\left<k\right> = 1$
+```{r}
+drake::readd(simulation_results_plot)
+```
+
+## Zadanie 20
+Uzyskany wynik symulacji w zadaniu 12 pokrywa się z wynikiem z wykresem z zadania 20.
+
 # Projekt
+
+# Zadania 24-25
+
+```{r}
+```
