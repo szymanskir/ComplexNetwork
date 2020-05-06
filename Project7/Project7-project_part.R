@@ -20,18 +20,11 @@ break_random_vertices <- function(graph, probability) {
   delete_vertices(graph, vertices_to_break)
 }
 
-break_random_edges <- function(graph, probability) {
-  edges <- E(graph)
-  edges_to_break_inds <- rbinom(length(edges), size = 1, prob = probability) %>% as.logical()
-  edges_to_break <- edges[edges_to_break_inds]
+attack_vertex <- function(graph, probability) {
+  vertices_to_break_count <- vcount(graph) * probability
+  vertices_to_break <- V(graph)[order(degree(graph), decreasing = TRUE)] %>% head(vertices_to_break_count)
   
-  delete_edges(graph, edges_to_break)
-}
-
-break_random_vertices_and_edges <- function(graph, probability) {
-  graph %>% 
-    break_random_vertices(probability) %>% 
-    break_random_edges(probability)
+  delete_vertices(graph, vertices_to_break)
 }
 
 run_single_breakdown_simulation <- function(graph, probabilities, breakdown_fun) {
@@ -45,10 +38,7 @@ run_single_breakdown_simulation <- function(graph, probabilities, breakdown_fun)
   )
 }
 
-compare_er_and_ba_resilience <- function(ba_graph, er_graph, probabilities, breakdown_fun) {
-  graphs <- list(ba_graph, er_graph)
-  graph_types <- list("barabasi", "erdos")
-  
+compare_er_and_ba_resilience <- function(graphs, graph_types, probabilities, breakdown_fun) {
   simulation_results <- mapply(function(graph, graph_type) {
     sim_result <- run_single_breakdown_simulation(graph, probabilities, breakdown_fun)
     sim_result$graph_type <- graph_type
@@ -58,16 +48,11 @@ compare_er_and_ba_resilience <- function(ba_graph, er_graph, probabilities, brea
   simulation_results
 }
 
-run_comparison_simulation <- function(times, n, m, probabilities, breakdown_fun) {
-  ba_graph <- barabasi.game(n = n, m = m, directed = FALSE)
-  ba_graph_edges_count <- E(ba_graph) %>% length()
-  
-  er_graph <- erdos.renyi.game(n = n, p.or.m = ba_graph_edges_count, type = "gnm", directed = FALSE)
-  print(sprintf("ba: %s _ er: %s", edge_density(ba_graph), edge_density(er_graph)))
+run_comparison_simulation <- function(times, graphs, graph_types, probabilities, breakdown_fun) {
   
   lapply(
     seq_len(times), 
-    function(x) compare_er_and_ba_resilience(ba_graph, er_graph, probabilities = probabilities, breakdown_fun = breakdown_fun)
+    function(x) compare_er_and_ba_resilience(graphs, graph_types, probabilities = probabilities, breakdown_fun = breakdown_fun)
   ) %>% 
     bind_rows() %>% 
     group_by(breakdown_probability, graph_type) %>% 

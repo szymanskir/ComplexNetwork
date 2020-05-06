@@ -36,7 +36,7 @@ get_masters_equation_results <- function(k, m) {
   (2 * m * (m + 1)) / (k * (k + 1) * (k + 2))
 }
 
-mean_degrees_hist$type = "symulacja"
+mean_degrees_hist$type <- "symulacja"
 continuous_time_method_results <- data.frame(
   breaks = mean_degrees_hist$breaks,
   counts = get_theoretical_results(k, mean_degrees_hist$breaks),
@@ -48,17 +48,32 @@ masters_equation_results <- data.frame(
   type = "równanie master"
 )
 
+all_vals <- bind_rows(mean_degrees_hist, continuous_time_method_results, masters_equation_results)
 
-bind_rows(mean_degrees_hist, continuous_time_method_results, masters_equation_results) %>% 
+all_vals %>% 
   ggplot(aes(x = breaks, y = counts, color = type, group = type)) +
   geom_point() +
   geom_line() +
   scale_x_log10() +
   scale_y_log10()
 ```
-Na podstawie trudno określić, które rozwiązanie lepiej dopasowuje się do rozkładu empirycznego.
+
+Na podstawie wykresu trudno określić, które rozwiązanie lepiej dopasowuje się do rozkładu empirycznego.
 
 ## Zadanie 5
+W celu weryfikacji, które podejście lepiej się dopasowuje do rozkładu empirycznego zastosowano test Kołmogorowa-Smirnowa. Poniżej przedstawiono wyniki:
+```{r}
+empirical_values <- all_vals %>% filter(type == "symulacja") %>% pull(counts)
+continuous_time_method <- all_vals %>% filter(type == "metoda czasu ciągłego") %>% pull(counts)
+master_values <- all_vals %>% filter(type == "równanie master") %>% pull(counts)
+
+data.frame(
+  "Metoda czasu ciągłego" = ks.test(empirical_values, continuous_time_method)$p.value,
+  "Równanie master" = ks.test(empirical_values, master_values)$p.value
+) %>% knitr::kable()
+```
+
+Uzyskana $p$-wartość jest wyższa dla równania master, stąd można stwierdzić, że lepiej się on dopasowuje do rozkladu empirycznego.
 
 ## Zadanie 12
 Przeprowadzono symulacje w trakcie której wygenerowano 1000 grafów o 400 wierzchołkach i prawdopodobieńtswa wystąpienia krawędzi równym 0.01. Większość wierzchołków zaczyna znajdować się w klastrze perkolacyjnym przy $\left<k\right> = 1$
@@ -73,5 +88,52 @@ Uzyskany wynik symulacji w zadaniu 12 pokrywa się z wynikiem z wykresem z zadan
 
 # Zadania 24-25
 
+W celu porównania odporności sieci ER oraz sieci bezskalowych na awarie przeprowadzono symulacje składające się z 1000 iteracji. W trakcie każdej iteracji usuwano losowo wierzchołki rozpatrując różne wartości prawdopodobieństwa awarii (100 wartości od 0 do 1). Wyniki pogrupowano po prawdopodobieństwach i zagregowano w postaci średniej. 
+
+W celu zapewnienia obiektywnego porównania, generowano sieci w taki sposób, żeby miały tyle samo wierzchołków oraz miały taką samą gęstość. Procedura zaczyna się od wygenerowania/wczytania sieci bezskalowej i następnie wygenerowania sieci ER za pomocą modelu $G_{N,E}$.
+
+## Porównanie sieci ER i BA pod względem losowych awarii
+
+W trakcie pierwszej symulacji porównano sieci ER oraz sieci BA pod względem odporności na awarie. Uzyskane wyniki przedstawiono na poniższym wykresie:
 ```{r}
+drake::readd(project_simulation_random_vertices_plot) +
+  labs(x = "Prawdopodobieństwo awarii", y = "Procent wierzchołków znadujących się w największej spójnej składowej")
 ```
+Między odpornością obu sieci widoczne są niewielki różnice. Wynik jest o tyle zaskakujący, że raczej spodziewana jest sytuacja, w której sieci BA jako sieci bezskalowe są bardziej odporne na losowe awarie niż sieci ER. Jednak w [Network Science](http://networksciencebook.com/chapter/8#robustness) wykazano, że sieci bezskalowe, których współczynnik $\alpha > 3$ zachowują się jak sieci losowe a współczynnik $\alpha$ dla sieci BA jest zbliżony do $3$.
+
+## Porównanie sieci ER i sieci rzeczywistej pod względem losowych awarii
+
+Jako przykładową sieć bezskalową ze współczynnikim $\alpha < 3$ wykorzystano dane mailowe z [Network Science](http://networksciencebook.com/translations/en/resources/data.html). Wygenerowano sieć ER o zgodnie z opisaną wcześniej procedurą. Wyniki przedstawiono na nastęþującym wykresie:
+```{r}
+drake::readd(project_simulation_random_vertices_real_plot) +
+  labs(x = "Prawdopodobieństwo awarii", y = "Procent wierzchołków znadujących się w największej spójnej składowej")
+```
+
+Można zauważyć, że z początku sieć ER była bardziej odporna. W ostatniej ćwiartce wykresu można zaobserwować, że sieć ER się już całkowicie rozpada podczas gdy sieć rzeczywista jeszcze zachowuje pewien poziom spójności.
+
+
+## Porównanie sieci ER i BA pod względem intencjonalnych ataków
+```{r}
+drake::readd(project_simulation_attack_vertices_plot) +
+  labs(x = "Prawdopodobieństwo awarii", y = "Procent wierzchołków znadujących się w największej spójnej składowej")
+```
+
+Sieci BA są mniej odporne na intencjonalne ataki.
+
+## Porównanie sieci ER i sieci rzeczywistej pod względem intencjonalnych ataków
+```{r}
+drake::readd(project_simulation_attack_vertices_real_plot) +
+  labs(x = "Prawdopodobieństwo awarii", y = "Procent wierzchołków znadujących się w największej spójnej składowej")
+```
+
+Sieć rzeczywista okazała się mniej odporna na intencjonalne ataki.
+
+## Porównanie sieci ER i sieci rzeczywistej pod względem intencjonalnych ataków
+```{r}
+drake::readd(project_simulation_attack_vertices_real_plot) +
+  labs(x = "Prawdopodobieństwo awarii", y = "Procent wierzchołków znadujących się w największej spójnej składowej")
+```
+
+# Zadanie 26
+**Obserwacje:**
+Sieci bezskalowe są bardziej odporne na losowe awarie. Jest to spowodane faktem, że większość wierzchołków w takich sieciach mają niskie stopnie w stosunku do reszty sieci. Jednak ten fakt jednocześnie powodouje, że są one bardziej podatne na intencjolane ataki na huby.

@@ -102,11 +102,25 @@ plan <- drake_plan(
   ############################
   ##############  Project 7
   ############################
+  mail_graph = read_graph("Project7/email.edgelist.txt"),
   simulation_vertex_count = 400,
   simulation_probability = 0.01,
   simulation_results = run_simulations(1000, simulation_vertex_count, simulation_probability),
   simulation_results_plot = plot_simulation_results(simulation_results),
-  project7_report_html = rmarkdown::render(input = knitr_in("Project7/Ryszard.Szymanski-7.Rmd")),
+  sim_vertex_count = 100,
+  sim_ba_graph = barabasi.game(n = sim_vertex_count, power = 1, m = 2, directed = FALSE),
+  sim_er_graph = erdos.renyi.game(n = vcount(sim_ba_graph), p.or.m = ecount(sim_ba_graph), type = "gnm", directed = FALSE),
+  sim_er_graph_mail = erdos.renyi.game(n = vcount(mail_graph), p.or.m = ecount(mail_graph), type = "gnm", directed = FALSE),
+  project_simulation_random_vertices = run_comparison_simulation(10, list(sim_ba_graph, sim_er_graph), list("BA", "ER"), seq(0, 1, length.out = 100), break_random_vertices),
+  project_simulation_random_vertices_plot = plot_graph_resilience_comparison(project_simulation_random_vertices),
+  project_simulation_attack_vertices = run_comparison_simulation(10, list(sim_ba_graph, sim_er_graph), list("BA", "ER"), seq(0, 1, length.out = 100), attack_vertex),
+  project_simulation_attack_vertices_plot = plot_graph_resilience_comparison(project_simulation_attack_vertices),
+  project_simulation_random_vertices_real = run_comparison_simulation(10, list(mail_graph, sim_er_graph_mail), list("MAIL", "ER"), seq(0, 1, length.out = 100), break_random_vertices),
+  project_simulation_random_vertices_real_plot = plot_graph_resilience_comparison(project_simulation_random_vertices_real),
+  project_simulation_attack_vertices_real = run_comparison_simulation(10, list(mail_graph, sim_er_graph_mail), list("MAIL", "ER"), seq(0, 1, length.out = 100), attack_vertex),
+  project_simulation_attack_vertices_real_plot = plot_graph_resilience_comparison(project_simulation_attack_vertices_real),
+  project7_report_html = rmarkdown::render(input = knitr_in("Project7/Ryszard.Szymanski-7.Rmd"))
 )
+
 
 make(plan)
