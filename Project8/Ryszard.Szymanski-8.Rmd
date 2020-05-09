@@ -1,0 +1,176 @@
+---
+title: "MASZ - Projekt 8 Sieci hierarchiczne, warstwowe i czasowe"
+author: "Ryszard Szymański"
+date: "5/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Zadania wykładowe
+
+## Zadanie 1
+Przygotowano funkcję przygotowującą ramkę danych z zależnością $C(k)$ (funkcja `prepare_clustering_coeff_to_degree_relation_data`) oraz odpowiednią funkcję `plot_clustering_coeff_to_degree_relation` to wizualizacji:
+
+```{r}
+prepare_clustering_coeff_to_degree_relation_data
+
+plot_clustering_coeff_to_degree_relation
+```
+
+## Zadanie 2
+
+Sprawdzono następujące sieci:
+* [cit-DBLP](http://networkrepository.com/cit-DBLP.php) - sieć cytowań
+* [rec-amazon](networkrepository.com/rec-amazon.php) - sieć wspólnie kupowanych produktów na Amazonie
+* [insecta-ant-colony1](http://networkrepository.com/insecta-ant-colony1.php) - sieć kontaktów w kolonii mrówek
+
+Narysowany wykresy zależności współczynnika gronowania od stopnia wierzchołka dla wszystkich 3 grafów. W celu weryfikacji czy punkty dopasowują się zgodnie z oczekiwaniami do zależności $C(k) \sim k^{-1}$ narysowano dodatkowym kolorem wartości funkcji $f(k) = k^{-1}$.
+
+### cit-DBLP
+```{r warning=FALSE}
+drake::readd(plot_data_cit_dlbp_graph)
+```
+
+### rec-amazon
+```{r warning=FALSE}
+drake::readd(plot_data_rec_amazon_graph)
+```
+
+### insecta-ant-colony
+```{r warning=FALSE}
+drake::readd(plot_data_ant_colony_graph)
+```
+
+
+Na podstawie powyższych wykresów można zauważyć, że sieć cytowań oraz sieć kolonii mrówek są hierarchicznie, co pokrywa się z oczekiwaniami. Sieć cytowań z powodów wspomianych na wykładzie a w przykładzie kolonii mrówek naturalna jest hierarchia: królowa, robotnice i inni. W przypadku sieci wspólnie kupowanych produktów na amazonie taka zależność nie występuje, aczkolwiek trudno tutaj  interpretować wykres, ponieważ występuje tam wiele wierzchołków o bardzo niskich stopniach:
+
+```{r}
+drake::readd(rec_amazon_graph) %>% degree() %>% hist()
+```
+
+## Zadanie 3 i 4
+Wykorzystano pojedyńczy plik z dostępnych danych rozkładowych. Przeparsowane metadatane przystanków oraz drogi wszystkich linii transportowych w celu utworzenia grafu. Zastosowano następującą regułe łączenia wierzchołków: jeśli dwa przystanki występują w jakiejkolwiek drodze bezpośrednio po sobie to są one połączone krawędzią. Rodzaj krawędzi (kolejowy, tramwajowy czy autobusowy) określano na podstawie rodzaju przystanków łączących dane krawędzie.
+
+### Linie autobuse
+```{r fig.width=12, fig.height=8}
+drake::readd(transport_graph_layer_plot_bus)
+```
+
+```{r}
+drake::readd(transport_graph_layer_summary_bus) %>% 
+  knitr::kable()
+```
+
+### Linie tramwajowe
+```{r fig.width=12, fig.height=8}
+drake::readd(transport_graph_layer_plot_tram)
+```
+
+```{r}
+drake::readd(transport_graph_layer_summary_tram) %>% 
+  knitr::kable()
+```
+
+### Linie pociągów
+```{r fig.width=12, fig.height=8}
+drake::readd(transport_graph_layer_plot_train)
+```
+
+```{r fig.width=12, fig.height=8}
+drake::readd(transport_graph_layer_summary_train) %>% 
+  knitr::kable()
+```
+
+### Sieć warstwowa
+```{r fig.width=12, fig.height=8}
+drake::readd(transport_graph_summary) %>% 
+  knitr::kable()
+```
+
+
+```{r fig.width=12, fig.height=8}
+drake::readd(transport_graph)$graph %>% 
+  degree() %>% 
+  hist()
+```
+
+```{r fig.width=12, fig.height=8}
+drake::readd(transport_graph_layer_plottt)
+```
+Na podstawie powyższych podsumowań i wykresów można zauważyć, że:
+
+* Warstwa "autobusowa" stanowi zdecydowaną więkość całej sieci
+* Większość wierzchołków ma stopień równy 2 -- są środkowym elementem trasy
+* Uzyskana sieć transportowa wykazuje "cechy" warstwowości -- niska różnorodność stopni wierzchołkach utrudnia odczytanie wykresu
+
+## Zadanie 5
+```{r fig.width=12, fig.height=8}
+drake::readd(transport_graph_plot)
+```
+
+## Zadanie 6
+Po sparsowaniu danych rozkładów obliczono liczbę autobusów odwiedzających przystanek w odstępach godzinowych. Sieć następowania budowano w taki sposób, żeby uwzględniano jedynie wierzchołki odwiedzane w danym odstępie czasowym. 
+
+## Zadanie 7
+Na animacji przedstawiono sieć transportową dla każdego godzinnego odstępu czasowego. Kolorem wierzchołka oznaczono jak wiele linii odwiedza dany przystanek.
+```{r fig.width=12, fig.height=8}
+knitr::include_app("animation.gif")
+```
+
+## Zadanie 8
+```{r fig.width=12, fig.height=8}
+drake::readd(transport_graph_summary_over_time_plot)
+```
+
+Na podstawie animacji oraz wykresu z zadań 7/8 można zauważyć:
+
+* W ciągu nocy (godziny 1-5) drastycznie zmniejsza się wielkość sieci transportowej -- duża ilość przystanków nie funkcjonuje o tej porze
+* Zdecydowanie wyższą aktywność przystanków bliżej centrum miasta
+* Na zmiane znikające/pojawiające się połączenia na obrzeżach miasta -- wynika to najprawdpodobniej z niskiej częstotliwości przejazdów w danej okolicy np. 1 pociąg na 2h w okolicach Michałowa-Reginowa
+* Po północy powrót w okolice obrzeży miasta komunikacją miejską może się okazać niemożliwy 
+
+# Projekt
+
+## Czy najbardziej usieciowione węzły z każdej z warstw występują w podobnych lokalizacjach?
+
+```{r}
+transport_graph <- drake::readd(transport_graph)$graph
+stop_data <- drake::readd(stop_metadata)
+bus_graph <- drake::readd(transport_graph_layer_bus)$graph
+tram_graph <- drake::readd(transport_graph_layer_tram)$graph
+train_graph <- drake::readd(transport_graph_layer_train)$graph
+
+layer_graphs <- list(bus = bus_graph, tram = tram_graph, train = train_graph)
+
+get_max_degree_vertices <- function(transport_graph, stop_data) {
+  max_degree_vertices <- degree(transport_graph) %>%
+    sort(decreasing = TRUE) %>% 
+    head(5)
+  
+  stop_data <- stop_data[id %in% names(max_degree_vertices), .(id, street, direction, lat, lon)]
+  stop_data$degree <- max_degree_vertices
+  stop_data
+}
+
+max_vertices_summary <- lapply(names(layer_graphs), function(type) {
+  df <- get_max_degree_vertices(layer_graphs[[type]], stop_data = stop_data)
+  df$type <- type
+  df
+}) %>% data.table::rbindlist()
+
+max_vertices_summary %>% 
+  knitr::kable()
+```
+
+Najbardziej usieciowione węzły warstw są różne. Jednak w każdym przypadku znajdują się w hubach "przesiadkowych"
+
+* Autobusy -- można to zauważyć np. po przystanku 605903, który znajduje się bardzo blisko pętli tramwajowej na Młocinach i metra Młociny.
+* Tramwaje -- 709109 Rondo Radosława jest częstym miejscem przesiadkowym dla wielu tras
+* Pociągi -- Ciekawym przypadkiem są przystanki 190701, 190702 ponieważ oba leżą na trasie Legiono - Warszawa:
+  * Tą trasą uczęszcza większość linii KM i SKM z tej okolicy
+  * W przypadku 19702 Legionowo Piaski stanowią hub przesiadkowy dla osób z mniejszych miejscowości z okolicy Legionowa -- osoby dojeżdżające do Legionowa lub jadące dalej do Warszawy
+  * W przypadku 19701 Warszawa Choszczówka pełni podobną rolę co Legionowo Piaski. Dodatkowo zjedżają się tam dwie okoliczne rozgłęzione trasy: do Chotomowa, do Wieliszewa
+  

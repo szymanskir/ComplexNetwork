@@ -5,6 +5,7 @@ source("Project4/Project4.R")
 source("Project5/Project5.R")
 source("Project6/Project6.R")
 source("Project7/Project7.R")
+source("Project8/Project8.R")
 
 set.seed(44)
 data(UKfaculty, package = "igraphdata")
@@ -119,7 +120,56 @@ plan <- drake_plan(
   project_simulation_random_vertices_real_plot = plot_graph_resilience_comparison(project_simulation_random_vertices_real),
   project_simulation_attack_vertices_real = run_comparison_simulation(1000, list(mail_graph, sim_er_graph_mail), list("MAIL", "ER"), seq(0, 1, length.out = 100), attack_vertex),
   project_simulation_attack_vertices_real_plot = plot_graph_resilience_comparison(project_simulation_attack_vertices_real),
-  project7_report_html = rmarkdown::render(input = knitr_in("Project7/Ryszard.Szymanski-7.Rmd"))
+  project7_report_html = rmarkdown::render(input = knitr_in("Project7/Ryszard.Szymanski-7.Rmd")),
+  
+  
+  ############################
+  ##############  Project 8
+  ############################
+  ant_colony_graph = read_graph("Project8/insecta-ant-colony1.edges", directed = FALSE),
+  rec_amazon_graph = read_graph("Project8/rec-amazon.mtx", format = "edge", directed = FALSE),
+  cit_dlbp_graph = read_graph("Project8/cit-DBLP.edges", directed = FALSE),
+  
+  data = target(
+    prepare_clustering_coeff_to_degree_relation_data(graph),
+    transform = map(graph = c(ant_colony_graph, rec_amazon_graph, cit_dlbp_graph))
+  ),
+  
+  plot = target(
+    plot_clustering_coeff_to_degree_relation(data, include_theoretical_curve = TRUE),
+    transform = map(data)
+  ),
+  
+  timetable_data = read_timetable_file("Project8/RA200516.TXT"),
+  section_metadata = parse_sections(timetable_data),
+  stop_metadata = retrieve_stop_metadata(section_metadata[type =="PR"], timetable_data),
+  route_data = get_route_data(section_metadata, timetable_data),
+  stop_time_metadata = get_stop_time_data(section_metadata, timetable_data),
+  
+  transport_graph_layer = target(
+    create_transport_graph(stop_metadata, route_data, type),
+    transform = map(type = c("bus", "tram", "train"))
+  ),
+  
+  transport_graph_layer_plot = target(
+    plot_transport_graph(transport_graph_layer),
+    transform = combine(transport_graph_layer, .by = type)
+  ),
+  
+  transport_graph_layer_summary = target(
+    summarise_graph(transport_graph_layer),
+    transform = combine(transport_graph_layer, .by = type)
+  ),
+
+  transport_graph = create_transport_graph(stop_metadata, route_data),
+  transport_graph_plot = plot_transport_graph(transport_graph),
+  transport_graph_layer_plottt = plot_clustering_coeff_to_degree_relation(prepare_clustering_coeff_to_degree_relation_data(transport_graph$graph), include_theoretical_curve = TRUE),
+  transport_graph_summary = summarise_graph(transport_graph),
+  transport_graph_animation = create_transport_graph_animation(stop_metadata, route_data, stop_time_metadata, "Project8/animation.gif"),
+  transport_graph_summary_over_time = get_transport_graph_summary_over_time(stop_metadata, route_data, stop_time_metadata),
+  transport_graph_summary_over_time_plot = plot_summary_over_time(transport_graph_summary_over_time),
+  
+  project8_report_html = rmarkdown::render(input = knitr_in("Project8/Ryszard.Szymanski-8.Rmd"))
 )
 
 
