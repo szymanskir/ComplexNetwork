@@ -169,7 +169,12 @@ plan <- drake_plan(
   transport_graph_summary_over_time = get_transport_graph_summary_over_time(stop_metadata, route_data, stop_time_metadata),
   transport_graph_summary_over_time_plot = plot_summary_over_time(transport_graph_summary_over_time),
   
-  project8_report_html = rmarkdown::render(input = knitr_in("Project8/Ryszard.Szymanski-8.Rmd"))
+  project8_report_html = rmarkdown::render(input = knitr_in("Project8/Ryszard.Szymanski-8.Rmd")),
+  
+  ############################
+  ##############  Project 9
+  ############################
+  project9_report_html = rmarkdown::render(input = knitr_in("Project9/Ryszard.Szymanski-9.Rmd")),
 )
 
 
