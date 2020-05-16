@@ -6,6 +6,110 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, fig.width = 12, fig.height = 8)
 ```
 
+# Zadania wykładowe
+
+# Zadanie 1,2,3,4
+Obliczenia dotyczące wartości gęstości ergodycznej przeprowadzono na wygenerowanym grafie BA o 90 wierzchołkach, gdzie podczas każdej iteracji dodawane były 3 krawędzie. 
+```{r}
+ba_graph <- barabasi.game(90, m = 3, directed = FALSE)
+ba_graph_adjacency_matrix <- get.adjacency(ba_graph)
+transition_matrix <- t(ba_graph_adjacency_matrix) / degree(ba_graph)
+```
+Najpierw do rozwiązania zadania zastosowano podejście dynamiczne wykonując iteracje operatora Markowa. Iteracje wykonywano do momentu, w którym norma różnic macierzy była większa niż $1e^{-9}$.
+```{r}
+simulate_ergodicity <- function(transition_matrix) {
+  current_matrix <- transition_matrix
+  repeat{
+    prev_matrix <- current_matrix
+    current_matrix <- transition_matrix %*% current_matrix
+    if (norm(current_matrix - prev_matrix) < 1e-9) {
+      break
+    }
+  }
+  
+  current_matrix
+}
+
+dynamic_version_result <- simulate_ergodicity(transition_matrix)
+```
+
+Następnie w celu weryfikacji skorzystano z metody numerycznej i wyznaczono wektor własny macierzy przejść. Należy pamiętać, że wbudowane funkcje mogą dokonywać dodatkowych operacji przy obliczaniu wartości własnych.
+```{r}
+ev <- eigen(t(transition_matrix))
+steady_state_vector <- ev$vectors[, 1] / sum(ev$vectors[, 1])
+```
+
+Ponieważ uzyskane wartości numeryczne są nieczytelne, porównano wyniki obu metod na wykresie. Wyniki zestawiono z wartościami stopni wierzchołków.
+```{r}
+df_results <- data.frame(
+  degree = degree(ba_graph),
+  numerical_method = steady_state_vector,
+  dynamic_method = dynamic_version_result[1, ]
+)
+
+df_results %>% 
+  pivot_longer(2:3, names_to = "method", values_to = "value") %>% 
+  mutate(method = ifelse(method == "dynamic_method", "Dynamiczna", "Numeryczna")) %>% 
+  ggplot(aes(x = degree, y = value, color = method)) +
+  geom_point() +
+  guides(color = guide_legend(title = "Rodzaj metody")) +
+  labs(x = "Stopień wierzchołka", y = "Gęstość ergodyczna")
+```
+Można zauważyć liniową zależność między gęstością ergodyczną a stopniem wierzchołka, co jest zgodne ze wskazówką z wykładu, że zalezność można zapisać jako $\pi_i = C \cdot k_i$. Wartość stałej można wyznaczyć za pomocą regresji liniowej:
+
+```{r}
+fitted_lm <- lm(numerical_method ~ degree + 0, df_results)
+fitted_lm$coefficients %>% 
+  knitr::kable(format = "html", col.names = "Wartość stałej") %>% 
+  kableExtra::kable_styling(full_width = FALSE, position = "center")
+```
+
+
+## Zadanie 5 i 6
+Zaimplementowano własną wersję algorytmu PageRank z użyciem metody numerycznej (wyznaczenie wartości własnej). Jej wynik porównano z wynikiem implementacji dostępnej w pakiecie `igraph`
+```{r}
+test_graph <- ba.game(10, directed = FALSE)
+my_pagerank <- function(graph, damping_factor = 0.85) {
+  N <- vcount(graph)
+  adjacency_matrix <- get.adjacency(graph)
+  transition_matrix <- t(adjacency_matrix / degree(graph))
+  
+  R <- ones(nrow(transition_matrix)) / N
+  page_rank_transition_matrix <- damping_factor * transition_matrix + (1 - damping_factor) * R
+  ev <- eigen(page_rank_transition_matrix)
+  
+  ev$vectors[, 1] / sum(ev$vectors[, 1])
+}
+```
+
+```{r fig.align='center', echo=FALSE}
+data.frame(
+  own =  my_pagerank(test_graph),
+  builtin = igraph::page_rank(test_graph)$vector
+) %>% knitr::kable(format = "html", col.names = c("Własna implementacja", "Wbudowana funkcja w pakiecie igraph")) %>% 
+  kableExtra::kable_styling(position = "center", full_width = FALSE)
+```
+
+# Projekt
+Do rozwiązania problemu zastosowano symulowane wyżarzanie, gdzie początkowy graf wygenerowany zostaje za pomocą modelu $G_{NM}$. Następnie w trakcie kolejnych iteracji każda krawędź jest przepinana z określonym prawdopodobieństwem $p$. Korzystając z równoważności do problemu średniej drogi minimalizowana jest właśnie średnia droga grafu.
+```{r}
+find_best_diffusion_graph
+```
+
+Przeprowadzono symulacje dla grafu o 100 wierzchołkach i 500 krawędziach. Krawędzie przepinano z p-stwem równym 0.01. Symulacje zakończono po 50000 iteracji. Na poniższym wykresie przedstawiono zmieniające się wartości średniej najdłużej ścieżki w trakcie symulacji:
+```{r}
+simulation_results <- drake::readd(best_diffusion_graph_result)
+
+qplot(x = seq_along(simulation_results$energies) , y = simulation_results$energies) +
+  labs(x = "Iteracja symulacji", y = "Średnia droga")
+```
+
+Poniżej przedstawiono graf poczatkowy oraz graf wynikowy:
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+drake::readd(best_diffusion_graph_plot)
+```
+
+Ciekawe zjawisko można zauważyć porównując histogramy stopni wierzchołków. Początkowy rozkład zbiegł do rozkładu z grubym ogonem.

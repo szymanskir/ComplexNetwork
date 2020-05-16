@@ -6,6 +6,7 @@ source("Project5/Project5.R")
 source("Project6/Project6.R")
 source("Project7/Project7.R")
 source("Project8/Project8.R")
+source("Project9/Project9.R")
 
 set.seed(44)
 data(UKfaculty, package = "igraphdata")
@@ -168,13 +169,22 @@ plan <- drake_plan(
   transport_graph_animation = create_transport_graph_animation(stop_metadata, route_data, stop_time_metadata, "Project8/animation.gif"),
   transport_graph_summary_over_time = get_transport_graph_summary_over_time(stop_metadata, route_data, stop_time_metadata),
   transport_graph_summary_over_time_plot = plot_summary_over_time(transport_graph_summary_over_time),
-  
+
   project8_report_html = rmarkdown::render(input = knitr_in("Project8/Ryszard.Szymanski-8.Rmd")),
   
   ############################
   ##############  Project 9
   ############################
-  project9_report_html = rmarkdown::render(input = knitr_in("Project9/Ryszard.Szymanski-9.Rmd")),
+  best_diffusion_graph_result = find_best_diffusion_graph(
+    vertex_count = 100, 
+    edges_count = 500, 
+    rewire_prob = 0.01, 
+    start_temperature = 300, 
+    temperature_lowering_factor = 0.99, 
+    steps = 50000
+  ),
+  best_diffusion_graph_plot = create_sim_result_plot(best_diffusion_graph_result),
+  project9_report_html = rmarkdown::render(input = knitr_in("Project9/Ryszard.Szymanski-9.Rmd"))
 )
 
 
